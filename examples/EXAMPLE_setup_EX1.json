@@ -1,0 +1,64 @@
+{
+  "_EXAMPLE": "FABRICATED EXAMPLE DATA - invented prices for illustration and tests. Not market data. Never alert from this.",
+  "id": "EX1",
+  "date": "2026-01-15",
+  "instrument": "NAS100",
+  "symbol": "OANDA:NAS100USD",
+  "decimals": 1,
+  "timeframe": "1m",
+  "direction": "short",
+  "killzone": "London Open (02:00-05:00 NY = 09:00-12:00 SAST)",
+  "killzone_end": "2026-01-15T12:00:00+02:00",
+  "killzone_end_sast": "12:00",
+  "model": "Core: buy-side raid (turtle soup) + MSS with displacement + FVG/OTE entry",
+  "charter_model": "M13 2022 model",
+  "charter_stage": "Trade Planning",
+  "daily_bias": "bear",
+  "sweep": {
+    "description": "EXAMPLE: 09:20-09:21 ran the 09:08 swing high 20030.0 (buy-side), closed back below at 09:22",
+    "level": 20030.0,
+    "extreme": 20042.0,
+    "extreme_time": "09:21",
+    "extreme_time_iso": "2026-01-15T09:21:00+02:00"
+  },
+  "mss": {
+    "level": 20010.0,
+    "description": "09:23 closed below the 09:13 swing low 20010.0; leg low 19985.0 at 09:25",
+    "displacement": "two large bearish candles (09:23-09:24)"
+  },
+  "fvg": {
+    "low": 20007.0,
+    "high": 20026.0
+  },
+  "ote": {
+    "low": 20020.3,
+    "high": 20030.0
+  },
+  "entry": 20026.0,
+  "targets": [
+    {
+      "name": "TP1",
+      "price": 19970.0,
+      "label": "EXAMPLE Asia low"
+    },
+    {
+      "name": "TP2",
+      "price": 19940.0,
+      "label": "EXAMPLE PDL"
+    }
+  ],
+  "risk_pct": 0.5,
+  "risk_mode": "standalone",
+  "size_formula": "equity x 0.005 / 25.0 pts",
+  "confluence": [
+    "EXAMPLE: DXY made a higher high in the same minute (risk-off tone)"
+  ],
+  "caveats": [
+    "EXAMPLE: intermarket notes stale"
+  ],
+  "data_source": "EXAMPLE FABRICATED BARS (examples/EXAMPLE_bars_NAS100_1m.csv)",
+  "fallback": false,
+  "status": "pending",
+  "alert_time": "2026-01-15T09:26:00+02:00",
+  "events": []
+}

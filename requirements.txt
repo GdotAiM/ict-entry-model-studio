@@ -1,0 +1,7 @@
+# Core scripts are stdlib-only (Python 3.10+). Optional extras:
+pandas>=2.0            # fetch_bars.py (tvDatafeed / yfinance return DataFrames)
+matplotlib>=3.7        # render_chart.py
+yfinance>=0.2          # FALLBACK data only - must be disclosed in alerts
+tzdata; platform_system == "Windows"
+# tvDatafeed is not on PyPI under that name; install from source:
+#   pip install --upgrade --no-cache-dir git+https://github.com/rongardF/tvdatafeed.git

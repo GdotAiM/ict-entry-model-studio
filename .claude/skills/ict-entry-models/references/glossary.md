@@ -1,0 +1,15 @@
+# Glossary (project wording)
+- **BSL / SSL** — buy-side / sell-side liquidity: stops resting above highs / below lows.
+- **Raid / sweep / turtle soup** — price trades through a pool and fails to hold beyond it.
+- **Judas swing** — the London-session false move that raids one side of the Asia range before the real move.
+- **MSS** — market structure shift: a close through the last swing before the raid extreme, with displacement.
+- **Displacement** — an energetic leg of large-bodied candles (script: body >= 1.5x median range of the prior 20 bars).
+- **FVG** — 3-candle imbalance: bearish when candle 1 low > candle 3 high; bullish when candle 1 high < candle 3 low.
+- **OTE** — optimal trade entry: 62–79% retracement of the displacement leg; 70.5% sweet spot.
+- **Breaker** — a raided swing whose candle range is later broken by the MSS; with an overlapping FVG = **Unicorn**.
+- **PD array** — premium/discount array (FVG, order block, breaker, void, old high/low).
+- **Dealing range / EQ** — IPDA 20-day high-low and its midpoint; above EQ = premium, below = discount.
+- **SMT divergence** — correlated markets disagree at a raid (e.g. EURUSD makes a lower low, GBPUSD does not; DXY vs EUR).
+- **IPDA** — interbank price delivery algorithm look-backs of 20/40/60 trading days.
+- **PDH / PDL** — previous day high / low (NY trading day, 17:00–17:00 NY).
+- **COUNTER-TREND** — a setup against the daily bias. Allowed, always labelled.

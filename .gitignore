@@ -1,0 +1,26 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.env
+.env.*
+*.key
+*.pem
+.DS_Store
+.claude/settings.local.json
+# Live working output: keep folders, not daily data
+drafts/*
+alerts/*
+charts/*
+journal/*
+findings/*
+state/setups/*
+!*/.gitkeep
+!state/setups/.gitkeep
+config/instruments.local.json
+!.env.example
+state/.watch.lock
+state/.last_slot
+state/bias_*.json
+tools/tradingview-bridge/node_modules/

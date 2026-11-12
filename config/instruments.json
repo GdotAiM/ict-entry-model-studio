@@ -1,0 +1,36 @@
+{
+  "_comment": "Instrument config. block_on_fallback: if TradingView fails, the yfinance proxy (a futures contract) is NOT used for that instrument (treated as NO DATA), because the futures/CFD basis can exceed the stop buffer; override in instruments.local.json. STOP BUFFERS ARE DEFAULTS pending Hilda's broker spreads: replace spread / wick_1m with your broker's typical London/NY spread and a normal 1m wick, ideally in config/instruments.local.json (git-ignored; it overrides this file key by key). They are not live quotes.",
+  "timezone_user": "Africa/Johannesburg",
+  "timezone_market": "America/New_York",
+  "watch_killzones": ["London Open", "NY AM"],
+  "scan_interval_minutes": 6,
+  "instruments": {
+    "NAS100": {
+      "tv": "OANDA:NAS100USD", "yf": "NQ=F", "block_on_fallback": true, "decimals": 1, "pip": 1.0, "usd_leg": null, "eq_tol": 3.0,
+      "stop_buffer": {"spread": 1.5, "wick_1m": 7.5, "unit": "index points", "status": "DEFAULT - pending Hilda's broker spread", "basis": "9 pts total, as used in Nov 2026 NAS alerts"}
+    },
+    "XAUUSD": {
+      "tv": "OANDA:XAUUSD", "yf": "GC=F", "block_on_fallback": true, "decimals": 2, "pip": 0.1, "usd_leg": "quote", "eq_tol": 0.5,
+      "stop_buffer": {"spread": 0.3, "wick_1m": 1.0, "unit": "USD per oz", "status": "DEFAULT - pending Hilda's broker spread", "basis": "1.3 total, as used in the 11 Nov X2 alert"}
+    },
+    "EURUSD": {
+      "tv": "OANDA:EURUSD", "yf": "EURUSD=X", "decimals": 5, "pip": 0.0001, "usd_leg": "quote", "eq_tol": 0.0002,
+      "stop_buffer": {"spread": 0.00008, "wick_1m": 0.00012, "unit": "price (0.0001 = 1 pip)", "status": "DEFAULT - pending Hilda's broker spread", "basis": "0.8 pip spread + 1.2 pip wick"}
+    },
+    "GBPUSD": {
+      "tv": "OANDA:GBPUSD", "yf": "GBPUSD=X", "decimals": 5, "pip": 0.0001, "usd_leg": "quote", "eq_tol": 0.0002,
+      "stop_buffer": {"spread": 0.0001, "wick_1m": 0.00015, "unit": "price (0.0001 = 1 pip)", "status": "DEFAULT - pending Hilda's broker spread", "basis": "1.0 pip spread + 1.5 pip wick"}
+    },
+    "DXY": {
+      "tv": "TVC:DXY", "yf": "DX-Y.NYB", "decimals": 3, "pip": 0.01, "usd_leg": "index", "confluence_only": true, "eq_tol": 0.02,
+      "stop_buffer": {"spread": 0.0, "wick_1m": 0.0, "unit": "n/a", "status": "confluence only - never traded"}
+    }
+  },
+  "risk": {
+    "min_rr": 2.0,
+    "standalone_pct": 0.5,
+    "correlated_pct_each": 0.25,
+    "correlated_max_trades": 4,
+    "correlated_group_max_pct": 1.0
+  }
+}

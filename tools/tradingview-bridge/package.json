@@ -1,0 +1,8 @@
+{
+  "name": "ict-entry-model-studio-tv-bridge",
+  "private": true,
+  "type": "module",
+  "description": "Read-only candle bridge: fetches OHLC bars with Mathieu2301/TradingView-API and prints them as JSON for scripts/fetch_bars.py. No trading, no account, no orders.",
+  "engines": { "node": ">=20.19" },
+  "dependencies": { "@mathieuc/tradingview": "4.1.1" }
+}

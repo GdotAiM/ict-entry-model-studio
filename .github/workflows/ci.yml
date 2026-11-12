@@ -1,0 +1,38 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Bridge script parses (no network)
+        run: node --check tools/tradingview-bridge/bridge.mjs
+      - run: pip install -r requirements-dev.txt
+      - run: pytest -q
+      - name: EXAMPLE pipeline (fabricated data, no network)
+        run: |
+          cp examples/EXAMPLE_setup_EX1.json /tmp/EX1.json
+          python3 .claude/skills/setup-detection/scripts/detect.py --csv examples/EXAMPLE_bars_NAS100_1m.csv --direction short --level 20030 > /dev/null
+          python3 .claude/skills/risk-rules/scripts/validate_setup.py --setup /tmp/EX1.json --write > /dev/null
+          python3 .claude/skills/alert-format/scripts/render_alert.py --setup /tmp/EX1.json --event NEW --out /tmp/EX1_NEW.md > /dev/null
+          python3 .claude/skills/alert-format/scripts/check_alert.py --file /tmp/EX1_NEW.md --event NEW --setup /tmp/EX1.json
+          python3 .claude/skills/chart-markup/scripts/render_chart.py --setup /tmp/EX1.json --bars examples/EXAMPLE_bars_NAS100_1m.csv --out /tmp/EX1.png
+          python3 .claude/skills/killzones/scripts/killzone.py table --date 2026-11-12 > /dev/null
+          python3 .claude/skills/ict-bias/scripts/mtf_bias.py --csv examples/EXAMPLE_bars_NAS100_1d.csv > /dev/null
+          python3 .claude/skills/setup-detection/scripts/models.py --csv examples/EXAMPLE_bars_NAS100_1m.csv --direction short --level 20030 > /dev/null
+          python3 scripts/scheduler.py windows --date 2026-11-12 > /dev/null
+          python3 scripts/notify.py --check-config || test $? -eq 2   # no secrets in CI: exit 2 = nothing configured
