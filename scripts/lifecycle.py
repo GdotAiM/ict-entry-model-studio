@@ -3,7 +3,8 @@
 
 States: pending -> filled -> tp1 (partial banked, rest open) -> closed_tp2 | closed_stop | closed_be
         pending -> void (TP1 traded before the fill) | invalid (raid extreme broke before the fill)
-                | cancelled (kill zone ended unfilled)
+                | cancelled (kill zone ended unfilled: decided by the clock, `now` >= kill-zone end, so it does not
+                  wait for a bar that opens after the end - that bar is still forming when the close-out run fires)
 Conservative intrabar rules (1m bars cannot tell the order of high and low):
   * A bar that reaches the stop and a target -> STOP is assumed.
   * A pending bar that touches the entry AND TP1 -> VOID (no win is claimed).
@@ -18,6 +19,10 @@ Exit codes: 0 new events, 1 no change, 2 usage error.
 """
 from __future__ import annotations
 import argparse, csv, json, sys
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+SAST = ZoneInfo("Africa/Johannesburg")
 
 TERMINAL = {"closed_tp2", "closed_tp1", "closed_stop", "closed_be", "void", "invalid", "cancelled"}
 
@@ -28,8 +33,16 @@ def load_csv(path: str) -> list[dict]:
                  "low": float(r["low"]), "close": float(r["close"])} for r in csv.DictReader(f)]
 
 
-def evaluate(setup: dict, bars: list[dict], kz_end: str | None = None) -> tuple[str, list[dict]]:
-    """Return (new_status, events). Pure function; does not mutate `setup`."""
+def _aware(t: str | datetime) -> datetime:
+    d = datetime.fromisoformat(t) if isinstance(t, str) else t
+    return d if d.tzinfo else d.replace(tzinfo=SAST)
+
+
+def evaluate(setup: dict, bars: list[dict], kz_end: str | None = None,
+             now: str | datetime | None = None) -> tuple[str, list[dict]]:
+    """Return (new_status, events). Pure function; does not mutate `setup`.
+    `now` (aware datetime or ISO string): when given and the kill zone has ended by `now`, a setup still pending after
+    the closed bars are replayed is CANCELLED at the kill-zone end time, even if no bar after the end exists yet."""
     status = setup.get("status", "pending")
     if status in TERMINAL:
         return status, []
@@ -57,7 +70,7 @@ def evaluate(setup: dict, bars: list[dict], kz_end: str | None = None) -> tuple[
             continue
         adverse, favour = (b["high"], b["low"]) if short else (b["low"], b["high"])
         if status == "pending":
-            if kz_end and b["time"] >= kz_end:
+            if kz_end and _aware(b["time"]) >= _aware(kz_end):
                 events.append({"event": "CANCELLED", "time": b["time"], "price": None, "r": 0.0,
                                "note": "kill zone ended unfilled"}); status = "cancelled"; break
             touched = beyond(adverse, entry)
@@ -96,6 +109,11 @@ def evaluate(setup: dict, bars: list[dict], kz_end: str | None = None) -> tuple[
             status = f"closed_tp{len(tps)}"; break
         if tp_hit:
             status = "tp1"
+    if status == "pending" and kz_end and now is not None and _aware(now) >= _aware(kz_end):
+        # every closed bar inside the kill zone has been checked above and none filled the setup
+        events.append({"event": "CANCELLED", "time": _aware(kz_end).astimezone(SAST).isoformat(), "price": None,
+                       "r": 0.0, "note": "kill zone ended unfilled"})
+        status = "cancelled"
     return status, events
 
 
@@ -103,13 +121,15 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--setup", required=True); p.add_argument("--bars", required=True)
     p.add_argument("--kz-end", help="ISO time the kill zone ends (cancel unfilled at/after it)")
+    p.add_argument("--now", help="ISO time of this check (default: the current time); an unfilled setup is cancelled "
+                                  "once now >= the kill-zone end")
     p.add_argument("--write", action="store_true")
     a = p.parse_args(argv)
     with open(a.setup) as f:
         setup = json.load(f)
     bars = load_csv(a.bars)
     try:
-        status, events = evaluate(setup, bars, a.kz_end)
+        status, events = evaluate(setup, bars, a.kz_end, a.now or datetime.now(SAST))
     except (KeyError, IndexError) as e:
         print(f"error: setup missing field {e}", file=sys.stderr); return 2
     print(json.dumps({"id": setup.get("id"), "status": status, "events": events}, indent=2))

@@ -336,12 +336,14 @@ def _chart(s: dict, rows: list[dict], event: str, root: str) -> str | None:
         return None
 
 
-MAX_AGE = timedelta(hours=6)
+MAX_AGE = timedelta(hours=6)  # measured from when the cycle DETECTED the event (detected_at), not the bar time
 
 
 def outbox(st: State, bars: Bars, dry_run: bool, env, charts: bool = True) -> dict:
     """Undelivered events (no log row) in order. A failed/blocked event stops later events of the same setup this cycle,
-    so Hilda never gets FILLED before NEW. Events older than MAX_AGE are reported as expired, not sent."""
+    so Hilda never gets FILLED before NEW. Events detected more than MAX_AGE ago (still undelivered) are reported as
+    expired, not sent. Age runs from `detected_at`, so an event found late (e.g. a CANCELLED stamped at the 17:00 kill-zone
+    end but first seen on the next morning's run) is still delivered once."""
     report = {"sent": [], "failed": [], "blocked": [], "dry_run": [], "expired": []}
     logged = {(r["setup_id"], r["event"]) for r in alert_log.read(st.log)}
     for s in st.setups():
@@ -349,7 +351,8 @@ def outbox(st: State, bars: Bars, dry_run: bool, env, charts: bool = True) -> di
             e = ev["event"]
             if (s["id"], e) in logged:
                 continue
-            if ev.get("time") and bars.now - datetime.fromisoformat(ev["time"]) > MAX_AGE:
+            seen = ev.get("detected_at") or ev.get("time")
+            if seen and bars.now - datetime.fromisoformat(seen) > MAX_AGE:
                 report["expired"].append({"id": s["id"], "event": e, "time": ev["time"]}); continue
             s_view = {**s, "charter_stage_override": None}
             txt = render_alert.render(s_view, e, None if e == "NEW" else ev["time"][11:16], ev.get("price"), ev.get("note", ""))
@@ -396,7 +399,9 @@ def run_cycle(now: datetime, root: str = ROOT, bars_dir: str | None = None, dry_
             rows = bars.get(s["instrument"], "1m")[0]
         except LookupError as e:
             report["errors"].append(str(e)); continue
-        status, evs = lifecycle.evaluate(s, rows, s.get("killzone_end"))
+        status, evs = lifecycle.evaluate(s, rows, s.get("killzone_end"), now)
+        for e in evs:
+            e.setdefault("detected_at", now.isoformat())
         s["last_checked"] = rows[-1]["time"]
         if evs:
             s["status"] = status
@@ -415,7 +420,9 @@ def run_cycle(now: datetime, root: str = ROOT, bars_dir: str | None = None, dry_
                 report["errors"].append(str(e)); continue
             for s in new:
                 rows = bars.get(inst, "1m")[0]
-                status, evs = lifecycle.evaluate(s, rows, s.get("killzone_end"))
+                status, evs = lifecycle.evaluate(s, rows, s.get("killzone_end"), now)
+                for e in evs:
+                    e.setdefault("detected_at", now.isoformat())
                 if status not in ("pending", "filled"):
                     continue  # already past TP1, void, invalid or closed before it could be alerted: not actionable, no stale burst
                 s["status"], s["last_checked"] = status, rows[-1]["time"]

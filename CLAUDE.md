@@ -28,7 +28,7 @@ and alert Hilda on every valid setup and every status change of an alerted setup
    Model names come from `models.py` (Unicorn, ICT 2022 model, core) and the Charter model from its M1–M13 checks; never claim a Charter
    model the script marks "not mechanical" or "insufficient data".
 9. **Lifecycle is mechanical.** `scripts/lifecycle.py` decides fill / TP / stop / void (TP1 traded before fill) / invalid (raid extreme broke before fill)
-   / cancelled (kill zone ended unfilled). Ambiguous 1m bars resolve conservatively (stop first; void before a claimed win).
+   / cancelled (kill zone ended unfilled, decided by the clock at the close-out run). Ambiguous 1m bars resolve conservatively (stop first; void before a claimed win).
 10. **Dedupe.** A row in `state/alerts_log.csv` means that alert **was delivered**. Never assume an earlier alert was aborted, and never resend
     a (setup_id, event) that is logged. Log only after delivery. Never message Hilda just to say nothing changed.
 11. **Delivery.** `scripts/notify.py` (Telegram and/or SMTP, secrets only in env / git-ignored `.env`) sends chart then text and logs

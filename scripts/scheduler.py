@@ -25,7 +25,9 @@ import emconfig, killzone  # noqa: E402
 
 SAST, NY = ZoneInfo("Africa/Johannesburg"), ZoneInfo("America/New_York")
 LOCK = os.path.join(ROOT, "state", ".watch.lock")
-CLOSE_OUT = timedelta(minutes=0)  # close-out at the kill-zone end minute (end is exclusive)
+# Close-out at the kill-zone end minute (end is exclusive). The bar that opens at the end minute is still forming then and
+# is never read (closed bars only); lifecycle.evaluate cancels unfilled setups by the clock (now >= end) instead.
+CLOSE_OUT = timedelta(minutes=0)
 LAST = os.path.join(ROOT, "state", ".last_slot")
 
 
