@@ -201,6 +201,27 @@ def test_stop_inside_forming_minute_is_not_missed(env, tg):
     assert r["events"] == ["N1 STOP"]
 
 
+def _dxy(points):
+    """FABRICATED DXY 1m rows from (HH:MM, low, high)."""
+    return [{"time": f"2026-01-15T{t}:00+02:00", "open": (lo + hi) / 2, "high": hi, "low": lo, "close": (lo + hi) / 2}
+            for t, lo, hi in points]
+
+
+def test_dxy_smt_for_usd_quote_pairs():
+    since = "2026-01-15T00:00:00+02:00"
+    base = [(f"09:{m:02d}", 99.00, 99.10) for m in range(0, 20)]                 # DXY low 99.00 before the sweep
+    held = _dxy(base + [("09:20", 99.02, 99.08), ("09:21", 99.03, 99.09)])       # EURUSD sweeps its high, DXY holds its low
+    r = watch.dxy_smt("short", "2026-01-15T09:21:00+02:00", held, since, "EURUSD")
+    assert r["smt"] is True and "divergence supports the short" in r["text"]
+    made = _dxy(base + [("09:20", 98.95, 99.05), ("09:21", 98.97, 99.04)])       # DXY made the mirror new low too
+    assert watch.dxy_smt("short", "2026-01-15T09:21:00+02:00", made, since)["smt"] is False
+    # long on the pair = sell-side sweep; the mirror is a new DXY high
+    up = _dxy(base + [("09:20", 99.05, 99.15)])
+    assert watch.dxy_smt("long", "2026-01-15T09:20:00+02:00", up, since)["smt"] is False
+    assert watch.dxy_smt("long", "2026-01-15T09:20:00+02:00", held, since)["smt"] is True
+    assert watch.dxy_smt("short", "2026-01-15T09:21:00+02:00", held[:3], since) is None   # not enough history: no call
+
+
 def test_scan_list_skips_dxy_and_switched_off_xauusd(env, tg):
     seen = []
     orig = watch.scan_instrument

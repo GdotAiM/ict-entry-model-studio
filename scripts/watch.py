@@ -157,6 +157,45 @@ def bias_for(st: State, bars: Bars, inst: str, today: str, last: float) -> dict:
     return b
 
 
+def context_bias(st: State, bars: Bars, today: str) -> dict:
+    """Bias for the context-only instruments on the watchlist (DXY), cached with the rest, for the dashboard bias panel.
+    No setups and no alerts are ever produced for them. Missing data is not an error here."""
+    out = {}
+    for inst in emconfig.watchlist(bars.cfg):
+        if not bars.cfg["instruments"][inst].get("confluence_only"):
+            continue
+        try:
+            daily = bars.get(inst, "1d")[0]
+            out[inst] = bias_for(st, bars, inst, today, daily[-1]["close"])
+        except (LookupError, ValueError):
+            continue
+    return out
+
+
+def dxy_smt(direction: str, sweep_time: str, dxy_rows: list[dict], since: str, pair: str = "the pair") -> dict | None:
+    """SMT against DXY for a USD-quote pair (EURUSD, GBPUSD move inverse to DXY).
+    A short on the pair follows a buy-side sweep (new high). The dollar mirror is a new DXY LOW. If DXY did NOT make a new
+    low around the sweep (+-3 min) versus its own low since `since`, the two disagree: SMT divergence, supports the trade.
+    If DXY did make the new low too, there is no divergence (neutral, noted). Confluence only - never a gate."""
+    t = datetime.fromisoformat(sweep_time)
+    lo, hi = (t - timedelta(minutes=3)).isoformat(), (t + timedelta(minutes=3)).isoformat()
+    prior = [b for b in dxy_rows if since <= b["time"] < lo]
+    near = [b for b in dxy_rows if lo <= b["time"] <= hi]
+    if len(prior) < 5 or not near:
+        return None
+    if direction == "short":
+        ref, now_x, made = min(b["low"] for b in prior), min(b["low"] for b in near), "low"
+        diverged = now_x >= ref
+    else:
+        ref, now_x, made = max(b["high"] for b in prior), max(b["high"] for b in near), "high"
+        diverged = now_x <= ref
+    side = "high" if direction == "short" else "low"
+    if diverged:
+        return {"smt": True, "text": f"DXY SMT: {pair} swept its {side} but DXY did not make the matching new {made} "
+                                     f"({now_x:.3f} vs {ref:.3f}) - divergence supports the {direction}"}
+    return {"smt": False, "text": f"no DXY SMT: DXY made the matching new {made} ({now_x:.3f} vs {ref:.3f})"}
+
+
 # ---------------------------------------------------------------- liquidity
 def _t(s: str) -> datetime:
     return datetime.fromisoformat(s)
@@ -305,6 +344,13 @@ def scan_instrument(inst: str, bars: Bars, st: State, now: datetime, kz: dict, c
                "target_is_old_daily": any(k in tps[0]["name"] for k in ("PDH", "PDL", "old", "PW", "PM")),
                "weekly_expansion": None if not wk else ("took prior low" in wk["context"] if direction == "short" else "took prior high" in wk["context"]),
                "liquidity_unswept": True}
+        smt = None
+        if ci.get("dxy_relation") == "inverse":
+            try:
+                day_start = datetime.combine(trading_day - timedelta(days=1), datetime.min.time().replace(hour=17), NY).astimezone(SAST)
+                smt = dxy_smt(direction, c["sweep"]["time"], bars.get("DXY", "1m")[0], day_start.isoformat(), inst)
+            except LookupError:
+                smt = None
         charters = models.charter_models(ctx)
         names = models.name_models(uni, charters)
         sid = st.next_id(inst) if not found else f"{PREFIX[inst]}{int(st.next_id(inst)[1:]) + len(found)}"
@@ -330,7 +376,9 @@ def scan_instrument(inst: str, bars: Bars, st: State, now: datetime, kz: dict, c
              "size_formula": f"equity x {rk['risk_pct'] / 100:g} / {val['risk_pts']:g} pts",
              "confluence": [f"MTF bias {bias.get('label', bias.get('bias'))} (confidence {bias.get('confidence')})"]
                            + [r for r in bias.get("reasoning", []) if "confirms" in r]
-                           + ([f"draw on liquidity {bias['draw']['name']} {bias['draw']['level']}"] if bias.get("draw") else []),
+                           + ([f"draw on liquidity {bias['draw']['name']} {bias['draw']['level']}"] if bias.get("draw") else [])
+                           + ([smt["text"]] if smt and smt["smt"] else []),
+             "dxy_smt": smt,
              "caveats": ([rk["note"]] if rk.get("note") else []) + (["stop buffer is a DEFAULT PLACEHOLDER pending your Capital.com spread"] if sb["is_default"] else [])
                         + [r for r in bias.get("reasoning", []) if r.startswith("EXTENDED") or "DISAGREES" in r],
              "data_source": meta.get("source"), "fallback": bool(meta.get("fallback")),
@@ -497,6 +545,8 @@ def run_cycle(now: datetime, root: str = ROOT, bars_dir: str | None = None, dry_
                 s["events"] += evs
                 st.save(s)
                 report["new"].append(s["id"])
+        if not instruments:
+            context_bias(st, bars, now.strftime("%Y-%m-%d"))   # DXY bias for the dashboard; never scanned or alerted
     # 3. outbox
     report["outbox"] = outbox(st, bars, dry_run, env, charts)
     lock_outbox(st, rs, dry_run, env, report["outbox"])
