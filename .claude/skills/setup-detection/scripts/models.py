@@ -179,7 +179,7 @@ def charter_models(ctx: dict) -> list[dict]:
     add("M9", "One shot, one kill", {"bias aligned (daily)": draw_ok, "high-confidence bias (>= 0.66)": None if conf is None else conf >= 0.66,
                                      "raid + valid MSS": run, "PD array entry (FVG/OTE/Unicorn)": bool(ctx.get("in_ote") or ctx.get("unicorn"))},
         essential=("high-confidence bias (>= 0.66)", "bias aligned (daily)"),
-        note="judgement model: the script only checks alignment; conviction is Hilda's call")
+        note="judgement model: the script only checks alignment; conviction is Ntloso's call")
     # M10 swing 50-75 pips/week
     add("M10", "Swing 50-75 pips a week", {"weekly bias agrees": wbias_ok, "Mon-Wed anchor": None if wd is None else wd <= 2,
                                            "15m liquidity pool raid": None if not ctx.get("sweep_tf") else ctx["sweep_tf"] in ("15m", "1h"),
@@ -199,7 +199,7 @@ def charter_models(ctx: dict) -> list[dict]:
         "canonical window (FX 07-10 NY, indices 08:30-11 NY)": win if not lon_open else None,
         "FVG on the right side of equilibrium": None if not ctx.get("fvg_side_of_eq") else ctx["fvg_side_of_eq"] == ("discount" if long else "premium")},
         essential=("liquidity raid", "fast MSS with displacement + FVG", "5m-1m entry timeframe"),
-        note="London Open use of the 2022 model is Hilda's practice; the canonical window check is skipped there")
+        note="London Open use of the 2022 model is Ntloso's practice; the canonical window check is skipped there")
     return out
 
 

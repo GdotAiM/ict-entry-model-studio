@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Alert dedupe log (CSV). A row in this file means the alert WAS delivered to Hilda.
+"""Alert dedupe log (CSV). A row in this file means the alert WAS delivered to Ntloso.
 
 Never assume an earlier alert was aborted or undelivered, and never send an alert or status that already has
 a row here. Only events with no matching (setup_id, event) row may be sent.

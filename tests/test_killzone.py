@@ -20,7 +20,7 @@ def test_ny_to_sast_dst():
     assert kz.ny_to_sast("09:30", date(2026, 3, 9)).strftime("%H:%M") == "15:30"  # US DST started 8 Mar 2026
 
 
-def test_table_est_matches_hildas_windows():
+def test_table_est_matches_ntlosos_windows():
     k = kz.killzones_for(date(2026, 11, 12))
     assert _sast(k, "Asian") == "03:00-07:00"
     assert _sast(k, "London Open") == "09:00-12:00"

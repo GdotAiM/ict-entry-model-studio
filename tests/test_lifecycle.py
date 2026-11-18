@@ -45,7 +45,7 @@ def test_tp1_then_rest_stopped(short_setup):
     assert [e["event"] for e in ev] == ["FILLED", "TP1", "STOP"] and ev[1]["r"] == 2.0 and st == "closed_stop"
 
 
-def test_breakeven_after_tp1_when_hilda_moves_stop(short_setup):
+def test_breakeven_after_tp1_when_ntloso_moves_stop(short_setup):
     short_setup["move_to_be_after_tp1"] = True
     bars = [bar(T(1), 99, 100.5, 98, 99), bar(T(2), 99, 99, 79, 85), bar(T(3), 85, 101, 84, 100.5)]
     st, ev = lc.evaluate(short_setup, bars)

@@ -1,6 +1,6 @@
 # Charter models: what the scanner can and cannot detect (honest table)
 
-Source: Hilda's Charter notes (`charter-models.md`). Implemented in `.claude/skills/setup-detection/scripts/models.py`.
+Source: Ntloso's Charter notes (`charter-models.md`). Implemented in `.claude/skills/setup-detection/scripts/models.py`.
 None = the check can't be computed from the data this project has; it neither passes nor fails a model.
 
 | Model | Mechanical checks | Not mechanical / approximated |
@@ -16,7 +16,7 @@ None = the check can't be computed from the data this project has; it neither pa
 | M10 Swing 50–75/week | weekly bias; Mon–Wed; 15m pool raid; London/NY open; 50–75 pip target (FX) | 1m scanner → sweep_tf is 1m, so usually partial |
 | M11 Day trade ~30 pips | weekly bias; old daily H/L as TP1; retrace into FVG/OTE; ~30 pip target (FX) | internal-range liquidity is approximated by FVG/OTE |
 | M12 Scalp ~20 pips | PDH/PDL or intraday raid; 15m or lower; ~20 pip target (FX) | tight-risk judgement |
-| M13 2022 model | raid; fast MSS with displacement + FVG; 5m–1m; canonical window (FX 07–10 NY, indices 08:30–11 NY); FVG on the right side of the leg EQ | London Open use is Hilda's practice: the window check is skipped (None), not failed |
+| M13 2022 model | raid; fast MSS with displacement + FVG; 5m–1m; canonical window (FX 07–10 NY, indices 08:30–11 NY); FVG on the right side of the leg EQ | London Open use is Ntloso's practice: the window check is skipped (None), not failed |
 
 Pip targets are FX-calibrated. For US100, US500 and XAUUSD those checks are None (not applied), so index and gold setups lean on M13/M12/M7/M6.
 Status rule: **detected** = every computable check passes, ≥60% of checks computable, and essential checks (e.g. M13's MSS) computed and true.

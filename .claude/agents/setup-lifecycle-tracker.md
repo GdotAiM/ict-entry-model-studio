@@ -16,4 +16,4 @@ Track status mechanically; every status change becomes exactly one alert.
 4. For each event: update `charter_stage` (FILLED -> Trade Execution; later -> Trade Management), then ask `chart-annotator` for an event chart
    and `alert-writer` for the alert.
 5. Open trades are tracked outside kill zones too (if a run happens): a stop or target hit between windows is reported at the next run with its true SAST time.
-6. If Hilda says she moved her stop to breakeven, set `move_to_be_after_tp1: true` (her decision; never suggest it as an instruction).
+6. If Ntloso says the stop was moved to breakeven, set `move_to_be_after_tp1: true` (Ntloso's decision; never suggest it as an instruction).

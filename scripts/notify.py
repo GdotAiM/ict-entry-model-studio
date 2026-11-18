@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deliver an alert to Hilda: chart image first, then the text, via Telegram Bot API and/or SMTP email.
+"""Deliver an alert to Ntloso: chart image first, then the text, via Telegram Bot API and/or SMTP email.
 Integrated with the dedupe log: an alert is logged as delivered ONLY after at least one channel succeeded,
 and an alert that is already logged is never sent again.
 

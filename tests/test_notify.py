@@ -5,7 +5,7 @@ import alert_log
 
 TG = {"TELEGRAM_BOT_TOKEN": "123:FAKE", "TELEGRAM_CHAT_ID": "42"}
 SMTP = {"SMTP_HOST": "smtp.example.invalid", "SMTP_PORT": "587", "SMTP_FROM": "bot@example.invalid",
-        "SMTP_TO": "hilda@example.invalid", "SMTP_USER": "u", "SMTP_PASSWORD": "p"}
+        "SMTP_TO": "ntloso@example.invalid", "SMTP_USER": "u", "SMTP_PASSWORD": "p"}
 
 
 class FakeResp(io.BytesIO):
@@ -67,7 +67,7 @@ def test_email_with_attachment(monkeypatch, chart):
     res = notify.deliver("body text", chart, "[ICT alert] N1 NEW", env=SMTP)
     m = sent["msg"]
     assert res["sent"] == ["email"] and sent["tls"] and sent["quit"]
-    assert m["Subject"] == "[ICT alert] N1 NEW" and m["To"] == "hilda@example.invalid"
+    assert m["Subject"] == "[ICT alert] N1 NEW" and m["To"] == "ntloso@example.invalid"
     atts = list(m.iter_attachments())
     assert atts and atts[0].get_filename() == "c.png"
 

@@ -25,7 +25,7 @@ KILLZONES = [
     ("London Close", "10:00", "12:00"),
     ("NY PM", "13:30", "16:00"),
 ]
-DEFAULT_WATCHED = ("London Open", "NY AM")  # Hilda's cost-cut: only these two are scanned
+DEFAULT_WATCHED = ("London Open", "NY AM")  # Ntloso's cost-cut: only these two are scanned
 
 
 def _t(s: str) -> time:

@@ -18,7 +18,7 @@ Analysis only, not financial advice. Nothing here places or manages orders.
 ```
 
 ## Status changes (one alert each, chart first)
-FILLED (-> Trade Execution), TP1 (-> Trade Management; breakeven is Hilda's call), TP2/TP3, STOP (R, gap fills worse than -1R),
+FILLED (-> Trade Execution), TP1 (-> Trade Management; breakeven is Ntloso's call), TP2/TP3, STOP (R, gap fills worse than -1R),
 BE, VOID (TP1 before fill), INVALID (raid extreme broke before fill), CANCELLED (kill zone ended). Each keeps the label,
 model, Charter stage, data line and disclaimer. Times in SAST.
 
