@@ -128,7 +128,7 @@ tests/                             pytest (no network)
 
 - Symbols were checked with a real 5-bar 1m and daily fetch through the Node bridge on 18 Nov 2026: all of the above returned data.
   Capital.com daily bars open at the 17:00 New York roll (00:00 SAST in November); TVC:DXY daily bars open 00:00 UTC (02:00 SAST),
-  which is allowed per instrument with `daily_open_sast_hours`. CAPITALCOM:DXY also works (a CFD); TVC:DXY is used because it is the index.
+  which is allowed per instrument with `daily_open_sast_hours`. Monday bars open at the Sunday re-open (US100/US500 01:00 SAST, DXY 00:00 SAST in November); the date guard accepts those too. CAPITALCOM:DXY also works (a CFD); TVC:DXY is used because it is the index.
 - Stop buffers are **placeholders**, not your spreads. Put your Capital.com spread and a normal 1m wick in `config/instruments.local.json`.
 - Kill zones are unchanged: London Open and NY AM only, defined in New York time and converted to SAST per date (DST-correct).
 - Correlation: US100 and US500 in the same direction share one 1% group. EURUSD and GBPUSD in the same USD direction share another; that

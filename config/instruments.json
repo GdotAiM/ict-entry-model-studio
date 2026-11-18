@@ -32,7 +32,7 @@
     },
     "DXY": {
       "tv": "TVC:DXY", "yf": "DX-Y.NYB", "decimals": 3, "pip": 0.01, "point": 0.001, "usd_leg": "index", "confluence_only": true, "eq_tol": 0.02,
-      "daily_open_sast_hours": [2], "_daily": "TVC:DXY daily bars open 00:00 UTC (02:00 SAST), not at the 17:00 New York FX roll",
+      "daily_open_sast_hours": [2, 23, 0], "_daily": "TVC:DXY weekday bars open 00:00 UTC (02:00 SAST); the Monday bar opens at the Sunday 17:00 New York open (00:00 SAST in winter, 23:00 in US summer)",
       "stop_buffer": {"spread": 0.0, "wick_1m": 0.0, "unit": "n/a", "status": "context only - never traded, no setups, no alerts"}
     }
   },

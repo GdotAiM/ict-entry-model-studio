@@ -152,8 +152,8 @@ def test_tvapi_daily_alignment_guard(tmp_path):
 def test_dxy_daily_opens_at_midnight_utc(tmp_path):
     # TVC:DXY daily bars open 00:00 UTC = 02:00 SAST (seen on a real fetch, 18 Nov 2026). Config allows hour 2 for DXY
     # only; label_daily's +2h shift still gives the right date. The same bar on US100 is refused.
-    assert fb.daily_open_hours("TVC:DXY") == (2,)
-    assert fb.daily_open_hours("CAPITALCOM:US100") == (23, 0)
+    assert fb.daily_open_hours("TVC:DXY") == (2, 23, 0)
+    assert fb.daily_open_hours("CAPITALCOM:US100") == (23, 0, 1)
     dxy = '[{"time":1768435200,"open":99,"high":99.5,"low":98.8,"close":99.2,"volume":0}]'   # 2026-01-15 00:00Z
     rows = fb._tvapi_fetch("TVC:DXY", "1d", 1, run=_runner(dxy), bridge_dir=_bridge(tmp_path))
     assert fb.label_daily(rows)[0]["time"] == "2026-01-15"
@@ -188,3 +188,14 @@ def test_bad_backend_value_is_an_error_not_a_silent_default(monkeypatch):
     monkeypatch.setenv("TV_BACKEND", "bogus")
     with pytest.raises(RuntimeError, match="TV_BACKEND"):
         fb._tv_fetch("CAPITALCOM:US100", "1m", 1)
+
+
+def test_monday_bars_after_the_weekend_reopen_are_accepted(tmp_path):
+    # Real shapes seen 18 Nov 2026: CAPITALCOM:US100 Mon 16 Nov opens 01:00 SAST (Sun 18:00 NY), Tue 00:00;
+    # TVC:DXY Mon 16 Nov opens 00:00 SAST (Sun 17:00 NY), Tue 02:00. Both label to the right trading dates.
+    us = '[{"time":1794783600,"open":1,"high":2,"low":0.5,"close":1.5},{"time":1794866400,"open":1,"high":2,"low":0.5,"close":1.5}]'
+    rows = fb._tvapi_fetch("CAPITALCOM:US100", "1d", 2, run=_runner(us), bridge_dir=_bridge(tmp_path))
+    assert [r["time"] for r in fb.label_daily(rows)] == ["2026-11-16", "2026-11-17"]
+    dx = '[{"time":1794780000,"open":1,"high":2,"low":0.5,"close":1.5},{"time":1794873600,"open":1,"high":2,"low":0.5,"close":1.5}]'
+    rows = fb._tvapi_fetch("TVC:DXY", "1d", 2, run=_runner(dx), bridge_dir=_bridge(tmp_path))
+    assert [r["time"] for r in fb.label_daily(rows)] == ["2026-11-16", "2026-11-17"]

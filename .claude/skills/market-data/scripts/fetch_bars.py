@@ -48,8 +48,10 @@ def label_daily(rows: list[dict]) -> list[dict]:
 
 def daily_open_hours(tv_symbol: str, cfg: dict | None = None) -> tuple:
     """SAST hours at which this symbol's daily bars may open. Default: the 17:00 New York roll (23:00 or 00:00 SAST,
-    DST-dependent), true for Capital.com and OANDA. An instrument can override it with "daily_open_sast_hours"
-    (TVC:DXY opens at 00:00 UTC = 02:00 SAST). label_daily()'s +2h shift gives the right date for all of these."""
+    DST-dependent) plus 01:00 (00:00 in US summer) for the Monday bar of Capital.com indices, which opens at the Sunday
+    18:00 New York re-open (seen on CAPITALCOM:US100/US500, 18 Nov 2026). An instrument can override it with
+    "daily_open_sast_hours" (TVC:DXY weekdays open 00:00 UTC = 02:00 SAST). label_daily()'s +2h shift gives the right
+    trading date for every one of these hours."""
     try:
         cfg = cfg or load_config()
         for spec in cfg["instruments"].values():
@@ -57,7 +59,7 @@ def daily_open_hours(tv_symbol: str, cfg: dict | None = None) -> tuple:
                 return tuple(int(h) for h in spec["daily_open_sast_hours"])
     except (OSError, ValueError, KeyError):
         pass
-    return (23, 0)
+    return (23, 0, 1)
 
 
 def _tvapi_fetch(tv_symbol: str, interval: str, n: int, run=subprocess.run, bridge_dir: str = BRIDGE_DIR, node: str = "node",
@@ -86,8 +88,8 @@ def _tvapi_fetch(tv_symbol: str, interval: str, n: int, run=subprocess.run, brid
     if not rows:
         raise RuntimeError("TradingView-API returned no bars")
     if interval == "1d":
-        # label_daily() assumes daily bars open at the 17:00 New York session start (23:00/00:00 SAST) unless the
-        # instrument says otherwise (daily_open_hours). Any other alignment would mis-date them, so refuse.
+        # label_daily() assumes daily bars open around the New York session start (daily_open_hours). Any other
+        # alignment could mis-date them, so refuse.
         hours = daily_hours or daily_open_hours(tv_symbol)
         if any(datetime.fromisoformat(r["time"]).hour not in hours for r in rows[-5:]):
             raise RuntimeError(f"TradingView-API daily bars for {tv_symbol} do not open at {hours} SAST; refusing to mis-date them")
