@@ -19,8 +19,14 @@ and alert Hilda on every valid setup and every status change of an alerted setup
 4. **Stop rule.** Stop at least **spread + a normal 1m wick beyond the raid extreme** (per-instrument `stop_buffer` in
    `config/instruments.json`; DEFAULTS until Hilda's broker spreads are entered, ideally in the git-ignored `config/instruments.local.json`). If that stop drops R:R below 1:2 -> **NO TRADE**.
    Never tighten a stop to rescue R:R.
-5. **Minimum 1:2 R:R.** A TP1 under 2R is flagged **PARTIAL only**, and only if a later target reaches 2R.
-6. **Risk.** 0.5% standalone. Correlated trades (same USD direction for EUR/GBP/XAU; same direction for NAS): 0.25% each, max 4, 1% group max.
+5. **Minimum 1:2 R:R.** A TP1 under 2R is flagged **PARTIAL only**, and only if a later target reaches 2R. The check uses the
+   **unrounded** ratio: 1.995R is under 2R (shown as 1.99R) and is NO TRADE.
+6. **Risk.** 0.5% standalone. Correlated trades (same USD direction for EUR/GBP/XAU; same direction for NAS): 0.25% each, max 4, 1% group max,
+   counted on the risk each open trade **really** carries (0.5 + 0.25 + 0.25 = 1.0% = group full). Caps: **2% daily loss** (trading day rolls
+   at 17:00 New York) and **5% max drawdown** from peak (`lib/riskstate.py`, config `risk`). A new setup is only allowed if today's
+   result minus all open risk minus its own risk stays inside both caps. When a cap is hit the watcher is **LOCKED**: setups found are
+   saved as status `locked` (never alerted) and exactly one RISK LOCKED alert is sent per lock. A drawdown lock stays until Hilda
+   reviews and sets `risk.dd_reset_at` in `config/instruments.local.json`. Never loosen a cap to let a setup through.
    Size is shown as a formula (`equity x risk% / risk pts`), never sent to a broker.
 7. **Bias label.** The multi-timeframe bias (`mtf_bias.py`: monthly/weekly/daily structure, dealing range, draw on liquidity,
    confidence) decides direction. Against it -> label **COUNTER-TREND** in the alert headline (allowed, never hidden).
@@ -35,7 +41,13 @@ and alert Hilda on every valid setup and every status change of an alerted setup
     the row only on success. `scripts/watch.py` is the pure-Python cycle; `scripts/scheduler.py` runs it every ~6 min in London Open
     and NY AM only. Never put tokens or passwords in the repo.
 12. **The gate decides.** An alert goes out only if `validate_setup.py` says VALID (new setups) and `check_alert.py` exits 0.
-    The chart goes first as its own attachment, then the text.
+    The chart goes first as its own attachment, then the text. The chart image carries the key numbers itself (entry, stop, TP1/TP2 with R,
+    kill-zone countdown, status) so it reads in a phone notification. A retry never re-sends a part Telegram already accepted
+    (`state/delivery_progress.json`).
+13. **One palette.** Status colours live only in `lib/palette.py` (chart image, dashboard, setup page, lifecycle, recap). Don't hard-code new ones.
+14. **UNPROVEN until pre-registered.** The weekly recap shows UNPROVEN unless `config/preregistration.json` exists (committed before the test
+    window) and its threshold is met on out-of-sample trades (n >= min_trades and the 95% lower bound of mean R above the threshold).
+    Never edit the pre-registration after trades are in, never describe in-sample results as evidence of edge.
 
 ## Conventions
 - **Closed bars only.** `watch.py` uses only 1m/5m/... bars that have closed by now (open time + interval <= now); the forming bar is never scanned or used for fills/stops, because `lifecycle.py` does not re-read a bar at or before `last_checked`.
@@ -48,5 +60,7 @@ and alert Hilda on every valid setup and every status change of an alerted setup
 - `findings/setups.md` is the only findings file this project writes; it starts with `Updated: YYYY-MM-DD HH:MM SAST` (`scripts/write_setups_md.py`).
   If a team findings folder is configured (`TEAM_FINDINGS_DIR`), read `bias.md`, `liquidity.md`, `intermarket.md` there; say when one is stale (older than today).
 - Charts: `charts/<inst>_<ID>_<MMDD>_<event>.png`. Alerts: `alerts/YYYY-MM-DD_<ID>_<EVENT>.md`.
+- Dashboard: `python3 scripts/dashboard.py` (writes `dashboard/`, git-ignored) or `--serve` (127.0.0.1 only). It only reads state; it never
+  fetches prices or sends anything. `--example` builds from fabricated data in a temp folder and labels every page EXAMPLE DATA.
 - OANDA feeds show **bid** prices; remind Hilda to check her broker's ask against stops on shorts.
 - If a required input is missing (no bars, no bias), **stop and say so**. Do not fabricate.

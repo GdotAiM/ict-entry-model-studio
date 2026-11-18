@@ -42,6 +42,38 @@ flowchart LR
 - **Deterministic core:** kill-zone times, detection, stop and R:R checks, sizing, lifecycle, dedupe and charts are all Python scripts. The model never works out R:R or SAST times itself.
 - **Gates:** `validate_setup.py` must return VALID and `check_alert.py` must PASS before anything is sent. `alert_log.py` blocks re-sends.
 - **Silent on no change:** a cycle with no new event sends nothing.
+- **Risk caps:** 0.5% per trade, correlated groups capped at 1% on the risk the open trades really carry, 2% daily loss, 5% max drawdown. At a cap the watcher is LOCKED: new setups are recorded but not alerted, and one RISK LOCKED alert goes out (see [Risk caps](#risk-caps-and-the-locked-state)).
+
+## Dashboard
+A local web dashboard, static HTML written by a standard-library script. It reads only the local state, never fetches prices and never sends anything.
+```bash
+python3 scripts/dashboard.py                 # writes dashboard/index.html (+ setup-<ID>.html, lifecycle.html, recap.html)
+python3 scripts/dashboard.py --serve         # http://127.0.0.1:8765/  rebuilt on every page load, auto-refresh 60 s
+python3 scripts/dashboard.py --example       # EXAMPLE DATA: fabricated week + the real watch cycle on the fabricated bars
+python3 scripts/dashboard.py --week 2026-11-09   # recap for another week
+```
+| Page | What it shows | Source |
+|---|---|---|
+| `index.html` | kill-zone timeline (SAST with NY times, watched zones highlighted, NOW marker, time left), watchlist with daily bias, live setups with status, alert feed, risk meters (next trade, correlated group vs 1%, daily worst case vs 2%, drawdown vs 5%, LOCKED box) | `state/setups/`, `state/alerts_log.csv`, `state/bias_<date>.json`, `lib/riskstate.py` |
+| `setup-<ID>.html` | annotated 1m chart (closed bars only), numbered "why it qualified" checklist, event timeline | the setup record + `state/bars/<INST>_1m.csv` (saved by `watch.py` each cycle) |
+| `lifecycle.html` | the state machine (incl. LOCKED) with live counts, recent transitions | `state/setups/` |
+| `recap.html` | weekly net R, cumulative R, by kill zone / instrument / bias label, trades, UNPROVEN badge | `state/alerts_log.csv` via `recap.py` |
+
+Colours come from `lib/palette.py`, the same palette the alert chart image uses.
+
+**The UNPROVEN badge.** The recap stays UNPROVEN unless a pre-registered test is met. To register one, commit `config/preregistration.json` *before* the test window, for example
+`{"id": "EM-1", "registered_at": "2026-12-01", "hypothesis": "London Open Unicorn shorts have positive expectancy", "min_trades": 30, "rule": "mean_r_ci95_low_above", "threshold": 0.0}`.
+Only closed trades dated after `registered_at` count. With fewer than `min_trades` it stays UNPROVEN; at `min_trades` or more it shows MEETS PRE-REGISTERED TEST if the lower 95% bound of the mean R is above `threshold`, otherwise FAILS PRE-REGISTERED TEST. Trades before registration never change the badge. The git history of that file is the audit trail.
+
+## Risk caps and the LOCKED state
+`lib/riskstate.py` rebuilds a model account from the setup records every cycle: each alerted setup at its recorded risk % (TP1 banks 50% when there is a second target, as in `recap.py`), compounded. It has no broker link, so it assumes every alert was taken at its stated risk. Check it against your account.
+- **Per trade:** 0.5% standalone, 0.25% for each correlated trade after the first.
+- **Correlated group:** max 4 trades and 1% total, counted on the real risk of the open trades. A 0.5% standalone trade plus two 0.25% trades fills the group.
+- **Daily loss 2%:** net realised % for the trading day (rolls at 17:00 New York: 00:00 SAST in US winter, 23:00 SAST in US summer).
+- **Max drawdown 5%:** from the equity peak since `risk.dd_reset_at` (or since the first record).
+- **Headroom:** a new setup is allowed only if today's result minus all open risk (pending, filled, and the remaining half after TP1) minus the new risk stays within 2%, and drawdown plus that risk stays within 5%. Otherwise it is skipped and listed in the cycle report.
+- **LOCKED:** at -2% today or 5% drawdown, setups the scanner finds are saved with status `locked` (shown on the dashboard, never alerted) and one RISK LOCKED alert is sent (dedupe key `RISK-DAY-YYYYMMDD` or `RISK-DD-YYYYMMDD` + `LOCKED`). The daily lock ends at the next trading day. The drawdown lock stays until you review and set `"risk": {"dd_reset_at": "2026-11-20T08:00:00+02:00"}` in `config/instruments.local.json`.
+Caps are in `config/instruments.json -> risk` (`daily_loss_cap_pct`, `max_drawdown_pct`).
 
 ## Layout
 ```
@@ -62,10 +94,10 @@ lib/emconfig.py                    config loader shared by the scripts
   setup-detection/scripts/detect.py          swings, sweep/turtle soup, displacement, FVG, MSS, OTE, entry suggestion
   setup-detection/scripts/models.py          Unicorn (breaker + FVG), Charter M1–M13 checks, model naming, Charter stage
   risk-rules/scripts/validate_setup.py       stop buffer, 1:2, TP1 partial, COUNTER-TREND label
-  risk-rules/scripts/position_size.py        0.5% standalone; 0.25% correlated, max 4, 1% group
+  risk-rules/scripts/position_size.py        0.5% standalone; 0.25% correlated, max 4, 1% group (on real open risk)
   alert-format/scripts/render_alert.py       fixed alert wording (NEW + every status event)
   alert-format/scripts/check_alert.py        alert gate (fields, labels, FALLBACK disclosure, banned language)
-  chart-markup/scripts/render_chart.py       matplotlib chart: sweep, MSS, FVG, OTE, entry, stop, targets
+  chart-markup/scripts/render_chart.py       alert image: status, kill-zone countdown, chart with SL/ENTRY/TP tags + R, levels, risk chips
   ict-entry-models/references/               core model, ICT 2022 model, Unicorn, Charter models 1–13, glossary
 tools/tradingview-bridge/               bridge.mjs + package.json: read-only candle fetch via Mathieu2301/TradingView-API
 scripts/watch.py                   one full watch cycle in pure Python (lifecycle → scan → outbox → setups.md)
@@ -75,6 +107,9 @@ scripts/lifecycle.py               pending → filled → TP1/TP2/stop; void / i
 scripts/alert_log.py               dedupe log (a row = delivered)
 scripts/write_setups_md.py         findings/setups.md with "Updated: YYYY-MM-DD HH:MM SAST"
 scripts/recap.py                   R by setup / instrument / session / model / bias label
+scripts/dashboard.py               local web dashboard: session monitor, setup detail, lifecycle, weekly recap (static HTML, --serve)
+lib/riskstate.py                   model-account risk state: daily loss, drawdown, open risk, headroom, LOCKED
+lib/palette.py                     the one status-colour palette (chart image + every HTML page)
 state/alerts_log.csv, SCHEMA.md    state (setups/*.json are git-ignored)
 examples/                          EXAMPLE DATA (FABRICATED) used by tests and CI
 tests/                             pytest (no network)
@@ -159,7 +194,9 @@ python3 scripts/notify.py --alert alerts/2026-11-12_N1_NEW.md --chart charts/nas
 ```
 - **Dedupe:** if `state/alerts_log.csv` already has (setup_id, event), nothing is sent.
 - **Logging:** the row is written only when at least one channel succeeded. Dry runs never log.
-- **Retries:** a failed delivery stays in the outbox, and `watch.py` retries it next cycle in order, so a FILLED never arrives before its NEW. Events older than 6 hours expire instead of being sent late.
+- **Retries:** a failed delivery stays in the outbox, and `watch.py` retries it next cycle in order, so a FILLED never arrives before its NEW. Events older than 6 hours (from when the cycle detected them) expire instead of being sent late.
+- **No duplicate photo:** the parts Telegram already accepted (photo, text part 1, ...) are kept in `state/delivery_progress.json` (git-ignored) until the alert is logged, so a retry sends only what is missing.
+- **The image is the alert:** the chart PNG shows instrument, direction, status, model, kill zone with a countdown and the auto-cancel time, entry / stop / TP1 / TP2 with R, risk %, stop points, bias label and the data source, so the photo notification is readable on its own.
 - **No secrets in the repo:** the notifier only sends messages. It has no trading code and never will.
 
 ## Model detection and bias
@@ -197,8 +234,8 @@ A full offline walkthrough on fabricated data is in [examples/README.md](example
 ## Rules encoded
 - **Sequence:** liquidity sweep or turtle soup, then a market structure shift with displacement, then an FVG, then entry at the FVG or in the OTE zone (62–79%). Models: the core sequence, the ICT 2022 model, the Unicorn, and Charter Price Action Models 1–13 with the 5-stage plan.
 - **Stop:** at least spread plus a normal 1m wick beyond the raid extreme. If that pushes R:R under 1:2, there's no trade.
-- **R:R:** minimum 1:2. A TP1 under 2R is flagged PARTIAL only.
-- **Risk:** 0.5% standalone. Correlated trades are 0.25% each, up to 4, with a 1% group maximum.
+- **R:R:** minimum 1:2, checked on the unrounded ratio (1.995R is NO TRADE and is shown as 1.99R). A TP1 under 2R is flagged PARTIAL only.
+- **Risk:** 0.5% standalone. Correlated trades are 0.25% each, up to 4, with a 1% group maximum counted on real open risk. 2% daily loss and 5% max drawdown caps; LOCKED at a cap.
 - **Labels:** a setup against the daily bias is labelled COUNTER-TREND.
 - **Closed bars only:** a bar is used only once it has closed (a 09:31 bar is available from 09:32:00). The forming bar is never scanned or used for fills and stops.
 - **Lifecycle:** a setup is void if TP1 trades before the fill, invalid if the raid extreme breaks before the fill, and cancelled at the end of the kill zone if unfilled. Ambiguous bars count as a stop first. A gap through the stop fills at the bar's open.

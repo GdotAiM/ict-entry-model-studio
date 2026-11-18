@@ -12,6 +12,7 @@ from these files and never quote these numbers as real levels.
 | `EXAMPLE_setup_EX1.json` | The setup record (state/SCHEMA.md) *before* validation |
 | `EXAMPLE_alert_EX1_NEW.md`, `EXAMPLE_alert_EX1_TP1.md` | Alerts rendered by `render_alert.py` after `validate_setup.py --write` |
 | `EXAMPLE_chart_EX1.png` | Chart rendered by `render_chart.py` |
+| `EXAMPLE_week.json` | A made-up week (Mon 12 – Thu 15 Jan 2026) of closed setups for the dashboard, risk meters and weekly recap (`scripts/dashboard.py --example`) |
 
 Walkthrough (writes only to /tmp):
 ```bash
@@ -29,4 +30,8 @@ Full pure-Python cycle on the fabricated data (state goes to a temp folder; noth
 mkdir -p /tmp/emx/bars && cp examples/EXAMPLE_bars_NAS100_1m.csv /tmp/emx/bars/NAS100_1m.csv && cp examples/EXAMPLE_bars_NAS100_1d.csv /tmp/emx/bars/NAS100_1d.csv
 python3 -c "import sys; sys.path.insert(0,'scripts'); import watch, json; from datetime import datetime as D; \
 print(json.dumps(watch.run_cycle(D.fromisoformat('2026-01-15T09:26:00+02:00'), root='/tmp/emx', bars_dir='/tmp/emx/bars', dry_run=True, instruments=['NAS100'])['outbox']['dry_run'][0]['text']))"
+```
+Dashboard on fabricated data (writes to a temp folder; every page is labelled EXAMPLE DATA):
+```bash
+python3 scripts/dashboard.py --example --out /tmp/emdash     # then open /tmp/emdash/dashboard/index.html
 ```

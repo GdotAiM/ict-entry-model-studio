@@ -36,3 +36,4 @@ jobs:
           python3 .claude/skills/setup-detection/scripts/models.py --csv examples/EXAMPLE_bars_NAS100_1m.csv --direction short --level 20030 > /dev/null
           python3 scripts/scheduler.py windows --date 2026-11-12 > /dev/null
           python3 scripts/notify.py --check-config || test $? -eq 2   # no secrets in CI: exit 2 = nothing configured
+          python3 scripts/dashboard.py --example --out /tmp/emdash > /dev/null

@@ -28,7 +28,9 @@ Written by `setup-validator`, updated by `setup-lifecycle-tracker`. Example (FAB
 | confluence, caveats | string[] | DXY / SMT / team-file notes; stale files named here |
 | data_source, fallback | string, bool | copied from the bar file's `.meta.json` |
 | validation | object | `{verdict, errors, notes}` |
-| status | string | `pending, filled, tp1, closed_tp1, closed_tp2, closed_stop, closed_be, void, invalid, cancelled` |
+| status | string | `pending, filled, tp1, closed_tp1, closed_tp2, closed_stop, closed_be, void, invalid, cancelled, locked` (`locked` = found while a risk cap was hit; never alerted, terminal) |
+| lock | object | only on `locked` setups: `{kind: daily|drawdown, id, reason, until}` from `lib/riskstate.py` |
+| example | bool | true only for EXAMPLE (fabricated) records built by `scripts/dashboard.py --example` |
 | move_to_be_after_tp1 | bool | set only when Hilda says she moved her stop to breakeven |
 | alert_time, last_checked | ISO | lifecycle only replays bars after `last_checked` |
 | events | list | `{event, time, price, r, note}` appended by `lifecycle.py --write` |
@@ -37,7 +39,8 @@ Written by `setup-validator`, updated by `setup-lifecycle-tracker`. Example (FAB
 ## `state/alerts_log.csv` — the dedupe log (tracked)
 Extends the original kill-zone alert log columns (`date,session,instrument,direction,alert_time_sast,swept,mss,zone,stop,target`) with
 `setup_id, label, model, event, r, chart`. Key = (`setup_id`, `event`). **A row means the alert was delivered.**
-Events: `NEW FILLED TP1 TP2 TP3 STOP BE VOID INVALID CANCELLED UPDATE` (UPDATE dedupes on its text in `mss`).
+Events: `NEW FILLED TP1 TP2 TP3 STOP BE VOID INVALID CANCELLED UPDATE LOCKED` (UPDATE dedupes on its text in `mss`).
+`LOCKED` rows are account-level: `setup_id` = `RISK-DAY-YYYYMMDD` / `RISK-DD-YYYYMMDD`, `instrument` = `ALL`, reason in `mss`. `recap.py` ignores them.
 
 ## Fields added by the pure-Python scanner (`scripts/watch.py`)
 | Field | Notes |
@@ -52,3 +55,6 @@ Events: `NEW FILLED TP1 TP2 TP3 STOP BE VOID INVALID CANCELLED UPDATE` (UPDATE d
 ## Other state
 - `state/bias_YYYY-MM-DD.json` — daily cache of `mtf_bias.py` per instrument (git-ignored).
 - `state/.last_slot`, `state/.watch.lock` — scheduler bookkeeping (git-ignored).
+- `state/bars/<INST>_1m.csv` (+ `.meta.json`) — the closed 1m bars the last cycle used, for the dashboard charts (git-ignored).
+- `state/delivery_progress.json` — parts of a not-yet-logged alert that a channel already accepted, so retries skip them (git-ignored).
+- `config/preregistration.json` (optional, committed) — the pre-registered test behind the recap's UNPROVEN badge (README, Dashboard).

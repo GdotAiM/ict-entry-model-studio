@@ -18,7 +18,9 @@ Say VALID or NO TRADE with numbers from scripts. You never move a stop or target
    Stop buffer comes from `config/instruments.json` `stop_buffer` (don't type it in).
 4. `validate_setup.py --setup state/setups/<ID>.json --write`. Exit 1 -> keep the file with status `rejected`, write the reason to the
    watching list, stop. (A NO TRADE is not alerted.)
-5. `position_size.py --risk-pts <risk> --instrument <I> --direction <d> --open <each open/pending setup>`; write risk_pct, risk_mode,
-   size_formula. Exit 1 (group full) -> NO TRADE.
+5. `position_size.py --risk-pts <risk> --instrument <I> --direction <d> --open <INST:dir:risk_pct for each open/pending setup>`; write
+   risk_pct, risk_mode, size_formula. Exit 1 (group full on real open risk) -> NO TRADE.
+   Then the account caps (`lib/riskstate.py`: 2% daily loss, 5% drawdown, worst case incl. open risk). If LOCKED, save the setup with
+   status `locked` and do not alert it; if the headroom check fails, NO TRADE. Never loosen a cap.
 6. Caveats to add when true: counter-trend; DXY not confirming; stale team files; weak/moderate displacement; prior trade in this kill zone lost.
 7. Hand the setup to `chart-annotator` and `alert-writer`.
