@@ -114,3 +114,38 @@ def test_no_secrets_committed():
     for line in ex.splitlines():
         if line.startswith(("TELEGRAM_BOT_TOKEN", "SMTP_PASSWORD", "TELEGRAM_CHAT_ID")):
             assert line.split("=", 1)[1] == ""
+
+
+def test_retry_after_text_failure_does_not_resend_photo(tmp_path, monkeypatch, chart):
+    """Photo accepted, text rejected -> not logged; the retry sends ONLY the text (one photo in total)."""
+    log, seen, fail = str(tmp_path / "log.csv"), [], {"on": True}
+    def fake(req, timeout=0):
+        m = req.full_url.rsplit("/", 1)[1]
+        seen.append(m)
+        if m == "sendMessage" and fail["on"]:
+            raise notify.urllib.error.URLError("timeout")
+        return FakeResp(json.dumps({"ok": True}).encode())
+    monkeypatch.setattr(notify.urllib.request, "urlopen", fake)
+    r = notify.deliver_and_log("N3", "NEW", "hello", chart, {}, log, env=TG)
+    assert r["logged"] is False and r["partial"] == {"telegram": ["photo"]}
+    assert json.load(open(notify.progress_path(log))) == {"N3|NEW": {"telegram": ["photo"]}}
+    fail["on"] = False
+    r = notify.deliver_and_log("N3", "NEW", "hello", chart, {}, log, env=TG)
+    assert r["logged"] is True and seen == ["sendPhoto", "sendMessage", "sendMessage"]
+    assert seen.count("sendPhoto") == 1
+    assert not (tmp_path / "delivery_progress.json").exists()          # cleared once delivered
+
+
+def test_retry_resumes_long_text_at_the_failed_part(tmp_path, monkeypatch):
+    log, seen, n = str(tmp_path / "log.csv"), [], {"k": 0}
+    def fake(req, timeout=0):
+        n["k"] += 1
+        seen.append(json.loads(req.data)["text"][:1])
+        if n["k"] == 2:
+            raise notify.urllib.error.URLError("drop")
+        return FakeResp(json.dumps({"ok": True}).encode())
+    monkeypatch.setattr(notify.urllib.request, "urlopen", fake)
+    text = "a" * notify.TG_TEXT_LIMIT + "b" * 10
+    assert notify.deliver_and_log("N4", "NEW", text, None, {}, log, env=TG)["logged"] is False
+    assert notify.deliver_and_log("N4", "NEW", text, None, {}, log, env=TG)["logged"] is True
+    assert seen == ["a", "b", "b"]                                        # part 1 never sent twice

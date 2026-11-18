@@ -74,14 +74,22 @@ def _tg_call(token: str, method: str, body: bytes, ctype: str, timeout: int = 30
     return res
 
 
-def send_telegram(text: str, chart: str | None, env=os.environ) -> None:
+def send_telegram(text: str, chart: str | None, env=os.environ, done: set | None = None) -> None:
+    """Photo first, then the text in <=4096-char parts. `done` holds the parts already delivered on an earlier try
+    ("photo", "text:0", "text:1", ...): they are skipped, and each part is added as soon as Telegram accepts it.
+    So a retry after a failed text part never sends the chart photo twice."""
     token, chat = env["TELEGRAM_BOT_TOKEN"], env["TELEGRAM_CHAT_ID"]
-    if chart:
+    done = set() if done is None else done
+    if chart and "photo" not in done:
         body, ctype = _multipart({"chat_id": chat}, "photo", chart)
         _tg_call(token, "sendPhoto", body, ctype)
-    for i in range(0, len(text), TG_TEXT_LIMIT):
+        done.add("photo")
+    for k, i in enumerate(range(0, len(text), TG_TEXT_LIMIT)):
+        if f"text:{k}" in done:
+            continue
         body = json.dumps({"chat_id": chat, "text": text[i:i + TG_TEXT_LIMIT], "disable_web_page_preview": True}).encode()
         _tg_call(token, "sendMessage", body, "application/json")
+        done.add(f"text:{k}")
 
 
 # ---------------------------------------------------------------- Email
@@ -118,8 +126,11 @@ def strip_header(text: str) -> str:
     return "\n".join(l for l in text.splitlines() if not l.startswith("<!--")).strip()
 
 
-def deliver(text: str, chart: str | None, subject: str, dry_run: bool = False, env=os.environ) -> dict:
-    """Returns {'sent': [channels], 'failed': {channel: error}, 'dry_run': bool}."""
+def deliver(text: str, chart: str | None, subject: str, dry_run: bool = False, env=os.environ,
+            progress: dict | None = None) -> dict:
+    """Returns {'sent': [channels], 'failed': {channel: error}, 'dry_run': bool}.
+    `progress` = {channel: set of parts already delivered} from an earlier failed try (updated in place)."""
+    progress = {} if progress is None else progress
     on = [k for k, v in channels(env).items() if v]
     res = {"sent": [], "failed": {}, "dry_run": dry_run, "channels": on}
     if chart and not os.path.exists(chart):
@@ -134,7 +145,7 @@ def deliver(text: str, chart: str | None, subject: str, dry_run: bool = False, e
     for ch in on:
         try:
             if ch == "telegram":
-                send_telegram(text, chart, env)
+                send_telegram(text, chart, env, progress.setdefault("telegram", set()))
             else:
                 send_email(subject, text, chart, env)
             res["sent"].append(ch)
@@ -148,13 +159,48 @@ def deliver_and_log(setup_id: str, event: str, text: str, chart: str | None, log
     """Dedupe -> send -> log only on success. Dry runs never log."""
     if alert_log.is_logged(log_path, setup_id, event):
         return {"skipped": "already delivered (row in alert log)", "sent": [], "failed": {}}
-    res = deliver(text, chart, subject or f"[ICT alert] {setup_id} {event}", dry_run, env)
+    ppath = progress_path(log_path)
+    allp = _load_progress(ppath)
+    key = f"{setup_id}|{event}"
+    prog = {ch: set(parts) for ch, parts in allp.get(key, {}).items()}
+    res = deliver(text, chart, subject or f"[ICT alert] {setup_id} {event}", dry_run, env, prog)
     if not dry_run and res["sent"]:
         row = {**log_row, "setup_id": setup_id, "event": event, "chart": chart or ""}
         res["logged"] = alert_log.add(log_path, row)
+        allp.pop(key, None)
     else:
         res["logged"] = False
+        if not dry_run and any(prog.values()):
+            allp[key] = {ch: sorted(parts) for ch, parts in prog.items() if parts}
+            res["partial"] = allp[key]
+    if not dry_run and (key in allp or os.path.exists(ppath)):
+        _save_progress(ppath, allp)
     return res
+
+
+def progress_path(log_path: str) -> str:
+    """Parts of an alert already delivered while the alert as a whole failed (git-ignored, next to the alert log)."""
+    return os.path.join(os.path.dirname(os.path.abspath(log_path)), "delivery_progress.json")
+
+
+def _load_progress(path: str) -> dict:
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def _save_progress(path: str, data: dict) -> None:
+    if not data:
+        if os.path.exists(path):
+            os.remove(path)
+        return
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(data, f, indent=2)
+    os.replace(tmp, path)
 
 
 def main(argv=None) -> int:

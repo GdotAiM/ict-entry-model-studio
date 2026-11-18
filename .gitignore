@@ -22,5 +22,8 @@ config/instruments.local.json
 !.env.example
 state/.watch.lock
 state/.last_slot
+state/delivery_progress.json
+state/bars/
+dashboard/
 state/bias_*.json
 tools/tradingview-bridge/node_modules/
