@@ -5,7 +5,7 @@ description: Multi-timeframe bias (monthly/weekly/daily structure, 20-day dealin
 # Multi-timeframe bias
 ```bash
 python3 .claude/skills/ict-bias/scripts/mtf_bias.py --csv drafts/bars/EURUSD_1d.csv --dxy drafts/bars/DXY_1d.csv
-python3 .claude/skills/ict-bias/scripts/mtf_bias.py --csv drafts/bars/NAS100_1d.csv --last 28081.0
+python3 .claude/skills/ict-bias/scripts/mtf_bias.py --csv drafts/bars/US100_1d.csv --last 28081.0
 ```
 Method (the full rules are in the script docstring):
 | Step | What |

@@ -7,7 +7,7 @@ with R), risk chips (risk %, stop points, bias label, data source) and the discl
 Only bars that have closed by `now` are drawn (no look-ahead in a replay). matplotlib only (Agg, no display).
 
     python3 .claude/skills/chart-markup/scripts/render_chart.py --setup state/setups/N6.json \
-        --bars drafts/bars/NAS100_1m.csv --out charts/nas_N6_1111_new.png [--event NEW] [--now ISO] [--last 120]
+        --bars drafts/bars/US100_1m.csv --out charts/us100_N6_1111_new.png [--event NEW] [--now ISO] [--last 120]
 """
 from __future__ import annotations
 import argparse, csv, json, os, re, sys

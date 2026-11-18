@@ -4,8 +4,8 @@ description: Deterministic sweep -> MSS (with displacement, within 15 bars) -> F
 ---
 # Setup detection
 ```bash
-python3 .claude/skills/setup-detection/scripts/detect.py --csv drafts/bars/NAS100_1m.csv --direction short --level 28167.1 --since 2026-11-12T09:00
-python3 .claude/skills/setup-detection/scripts/models.py --csv drafts/bars/NAS100_1m.csv --direction short --level 28167.1 --context ctx.json
+python3 .claude/skills/setup-detection/scripts/detect.py --csv drafts/bars/US100_1m.csv --direction short --level 28167.1 --since 2026-11-12T09:00
+python3 .claude/skills/setup-detection/scripts/models.py --csv drafts/bars/US100_1m.csv --direction short --level 28167.1 --context ctx.json
 ```
 `detect.py` stages: **not swept** → **swept** (turtle soup flag) → **mss (not valid)** (no displacement/FVG, or the break came more than
 15 bars after the raid extreme) → **complete** (OTE 62/70.5/79% and an entry suggestion).

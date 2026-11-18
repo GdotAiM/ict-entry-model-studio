@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generates EXAMPLE (FABRICATED) 1m bars for tests and the README walkthrough.
 These prices are invented to illustrate the sequence. They are NOT market data and must never be used in an alert.
-    python3 examples/make_example.py  ->  examples/EXAMPLE_bars_NAS100_1m.csv
+    python3 examples/make_example.py  ->  examples/EXAMPLE_bars_US100_1m.csv
 """
 import csv, os
 from datetime import datetime, timedelta
@@ -58,8 +58,8 @@ def daily_rows():
     return rows
 
 
-def main(out=os.path.join(os.path.dirname(__file__), "EXAMPLE_bars_NAS100_1m.csv")):
-    with open(os.path.join(os.path.dirname(out), "EXAMPLE_bars_NAS100_1d.csv"), "w", newline="") as f:
+def main(out=os.path.join(os.path.dirname(__file__), "EXAMPLE_bars_US100_1m.csv")):
+    with open(os.path.join(os.path.dirname(out), "EXAMPLE_bars_US100_1d.csv"), "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["time", "open", "high", "low", "close"])
         w.writerows(daily_rows())

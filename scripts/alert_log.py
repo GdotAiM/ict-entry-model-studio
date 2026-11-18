@@ -5,9 +5,9 @@ Never assume an earlier alert was aborted or undelivered, and never send an aler
 a row here. Only events with no matching (setup_id, event) row may be sent.
 
     python3 scripts/alert_log.py check --id N6 --event NEW          # exit 1 if already logged
-    python3 scripts/alert_log.py add --id N6 --event NEW --instrument NAS100 --direction short \
+    python3 scripts/alert_log.py add --id N6 --event NEW --instrument US100 --direction short \
         --session "London Open" --time 10:51 --swept "..." --mss "..." --zone "..." --stop 28248.0 \
-        --target "28159.4 / 28108.7" --r 0 --chart charts/nas_N6_new.png
+        --target "28159.4 / 28108.7" --r 0 --chart charts/us100_N6_new.png
     python3 scripts/alert_log.py list [--date 2026-11-11]
 Log a row only AFTER the alert is delivered. Columns extend the original kz_alerts.csv schema
 (date,session,instrument,direction,alert_time_sast,swept,mss,zone,stop,target) with setup_id, label

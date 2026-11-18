@@ -18,5 +18,5 @@ None = the check can't be computed from the data this project has; it neither pa
 | M12 Scalp ~20 pips | PDH/PDL or intraday raid; 15m or lower; ~20 pip target (FX) | tight-risk judgement |
 | M13 2022 model | raid; fast MSS with displacement + FVG; 5m–1m; canonical window (FX 07–10 NY, indices 08:30–11 NY); FVG on the right side of the leg EQ | London Open use is Hilda's practice: the window check is skipped (None), not failed |
 
-Pip targets are FX-calibrated. For NAS100 and XAUUSD those checks are None (not applied), so index and gold setups lean on M13/M12/M7/M6.
+Pip targets are FX-calibrated. For US100 and XAUUSD those checks are None (not applied), so index and gold setups lean on M13/M12/M7/M6.
 Status rule: **detected** = every computable check passes, ≥60% of checks computable, and essential checks (e.g. M13's MSS) computed and true.

@@ -82,7 +82,7 @@ def test_dry_run_and_no_config_never_log(tmp_path, calls):
 
 def test_log_only_on_success_and_dedupe(tmp_path, calls):
     log = str(tmp_path / "log.csv")
-    r = notify.deliver_and_log("N1", "NEW", "t", None, {"instrument": "NAS100"}, log, env=TG)
+    r = notify.deliver_and_log("N1", "NEW", "t", None, {"instrument": "US100"}, log, env=TG)
     assert r["logged"] is True and alert_log.is_logged(log, "N1", "NEW")
     n = len(calls)
     r = notify.deliver_and_log("N1", "NEW", "t", None, {}, log, env=TG)

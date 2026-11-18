@@ -2,8 +2,8 @@
   "_EXAMPLE": "FABRICATED EXAMPLE DATA - invented prices for illustration and tests. Not market data. Never alert from this.",
   "id": "EX1",
   "date": "2026-01-15",
-  "instrument": "NAS100",
-  "symbol": "OANDA:NAS100USD",
+  "instrument": "US100",
+  "symbol": "CAPITALCOM:US100",
   "decimals": 1,
   "timeframe": "1m",
   "direction": "short",
@@ -56,7 +56,7 @@
   "caveats": [
     "EXAMPLE: intermarket notes stale"
   ],
-  "data_source": "EXAMPLE FABRICATED BARS (examples/EXAMPLE_bars_NAS100_1m.csv)",
+  "data_source": "EXAMPLE FABRICATED BARS (examples/EXAMPLE_bars_US100_1m.csv)",
   "fallback": false,
   "status": "pending",
   "alert_time": "2026-01-15T09:26:00+02:00",

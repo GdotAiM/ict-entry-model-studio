@@ -4,7 +4,7 @@ import pytest
 import mtf_bias as mb
 from conftest import ROOT
 
-EX_DAILY = os.path.join(ROOT, "examples", "EXAMPLE_bars_NAS100_1d.csv")
+EX_DAILY = os.path.join(ROOT, "examples", "EXAMPLE_bars_US100_1d.csv")
 
 
 def trend(n=300, step=-5.0, start=21000.0):

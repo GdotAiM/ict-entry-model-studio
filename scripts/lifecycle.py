@@ -13,7 +13,7 @@ Conservative intrabar rules (1m bars cannot tell the order of high and low):
     stop is checked on the same bar.
   * A bar that OPENS beyond the stop -> stop filled at the open (gap), R worse than -1.
 
-    python3 scripts/lifecycle.py --setup state/setups/N6.json --bars drafts/bars/NAS100_1m.csv [--write]
+    python3 scripts/lifecycle.py --setup state/setups/N6.json --bars drafts/bars/US100_1m.csv [--write]
 Prints {"status", "events": [...]} for events newer than setup["last_checked"]. --write updates the setup file.
 Exit codes: 0 new events, 1 no change, 2 usage error.
 """

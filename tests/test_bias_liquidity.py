@@ -28,7 +28,7 @@ def test_liquidity_map_asia_and_sweep():
 
 
 def test_setups_md_header_and_sections():
-    s = {"id": "EX1", "instrument": "NAS100", "direction": "short", "entry": 1, "stop": 2, "risk_pts": 1,
+    s = {"id": "EX1", "instrument": "US100", "direction": "short", "entry": 1, "stop": 2, "risk_pts": 1,
          "targets": [{"name": "TP1", "price": 0, "r": 2.0}], "status": "pending"}
     txt = wm.build([s, {**s, "id": "EX0", "status": "closed_stop"}], ["EXAMPLE watch note"],
                    now=datetime(2026, 1, 15, 9, 30, tzinfo=SAST))

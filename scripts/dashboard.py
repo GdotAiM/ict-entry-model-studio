@@ -775,9 +775,9 @@ def seed_example(root: str, until: str = "09:40") -> datetime:
     bars = os.path.join(root, "bars")
     os.makedirs(bars, exist_ok=True)
     for iv in ("1m", "1d"):
-        shutil.copy(os.path.join(ROOT, "examples", f"EXAMPLE_bars_NAS100_{iv}.csv"), os.path.join(bars, f"NAS100_{iv}.csv"))
-        with open(os.path.join(bars, f"NAS100_{iv}.csv.meta.json"), "w") as f:
-            json.dump({"source": "EXAMPLE DATA (fabricated) NAS100", "fallback": False}, f)
+        shutil.copy(os.path.join(ROOT, "examples", f"EXAMPLE_bars_US100_{iv}.csv"), os.path.join(bars, f"US100_{iv}.csv"))
+        with open(os.path.join(bars, f"US100_{iv}.csv.meta.json"), "w") as f:
+            json.dump({"source": "EXAMPLE DATA (fabricated) US100", "fallback": False}, f)
     log = os.path.join(root, "state", "alerts_log.csv")
     fx = _read_json(os.path.join(ROOT, "examples", "EXAMPLE_week.json"))
     cfg = emconfig.load_config()
@@ -816,7 +816,7 @@ def seed_example(root: str, until: str = "09:40") -> datetime:
     last = None
     for hhmm in ("09:20", "09:27", "09:32", until):
         now = datetime.fromisoformat(f"2026-01-15T{hhmm}:00+02:00")
-        rep = watch.run_cycle(now, root=root, bars_dir=bars, dry_run=True, instruments=["NAS100"])
+        rep = watch.run_cycle(now, root=root, bars_dir=bars, dry_run=True, instruments=["US100"])
         for x in rep["outbox"]["dry_run"]:
             s = _read_json(os.path.join(root, "state", "setups", f"{x['id']}.json"))
             if not s:

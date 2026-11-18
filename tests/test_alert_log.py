@@ -3,7 +3,7 @@ import recap
 
 
 def row(sid, ev, r="", target="20 / 10", label="with-bias", date="2026-01-15"):
-    return {"date": date, "session": "London Open", "instrument": "NAS100", "setup_id": sid, "direction": "short",
+    return {"date": date, "session": "London Open", "instrument": "US100", "setup_id": sid, "direction": "short",
             "label": label, "model": "core", "event": ev, "alert_time_sast": "09:30", "target": target, "r": r}
 
 

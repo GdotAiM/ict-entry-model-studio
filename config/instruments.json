@@ -1,29 +1,39 @@
 {
-  "_comment": "Instrument config. block_on_fallback: if TradingView fails, the yfinance proxy (a futures contract) is NOT used for that instrument (treated as NO DATA), because the futures/CFD basis can exceed the stop buffer; override in instruments.local.json. STOP BUFFERS ARE DEFAULTS pending Hilda's broker spreads: replace spread / wick_1m with your broker's typical London/NY spread and a normal 1m wick, ideally in config/instruments.local.json (git-ignored; it overrides this file key by key). They are not live quotes.",
+  "_comment": "Instrument config. block_on_fallback: if TradingView fails, the yfinance proxy (a futures contract) is NOT used for that instrument (treated as NO DATA), because the futures/CFD basis can exceed the stop buffer; override in instruments.local.json. STOP BUFFERS ARE DEFAULT PLACEHOLDERS pending your Capital.com spreads: replace spread / wick_1m with your broker's typical London/NY spread and a normal 1m wick, ideally in config/instruments.local.json (git-ignored; it overrides this file key by key). They are not live quotes.",
   "timezone_user": "Africa/Johannesburg",
   "timezone_market": "America/New_York",
   "watch_killzones": ["London Open", "NY AM"],
   "scan_interval_minutes": 6,
   "instruments": {
-    "NAS100": {
-      "tv": "OANDA:NAS100USD", "yf": "NQ=F", "block_on_fallback": true, "decimals": 1, "pip": 1.0, "usd_leg": null, "eq_tol": 3.0,
-      "stop_buffer": {"spread": 1.5, "wick_1m": 7.5, "unit": "index points", "status": "DEFAULT - pending Hilda's broker spread", "basis": "9 pts total, as used in Nov 2026 NAS alerts"}
+    "US100": {
+      "tv": "CAPITALCOM:US100", "yf": "NQ=F", "block_on_fallback": true, "decimals": 1, "pip": 1.0, "point": 1.0, "usd_leg": null, "eq_tol": 3.0,
+      "corr_group": "US-indices", "dxy_relation": "none",
+      "stop_buffer": {"spread": 1.5, "wick_1m": 7.5, "unit": "index points", "status": "DEFAULT PLACEHOLDER - enter your Capital.com US100 spread and a normal 1m wick", "basis": "9 pts total, carried over from the Nov 2026 NAS100 alerts; Capital.com quotes US100 spread around 1-2 pts, not verified"}
+    },
+    "US500": {
+      "tv": "CAPITALCOM:US500", "yf": "ES=F", "block_on_fallback": true, "decimals": 1, "pip": 1.0, "point": 1.0, "usd_leg": null, "eq_tol": 1.0,
+      "corr_group": "US-indices", "dxy_relation": "none",
+      "stop_buffer": {"spread": 0.5, "wick_1m": 2.0, "unit": "index points", "status": "DEFAULT PLACEHOLDER - enter your Capital.com US500 spread and a normal 1m wick", "basis": "2.5 pts total, scaled from US100 by price (~0.27x); not verified"}
     },
     "XAUUSD": {
-      "tv": "OANDA:XAUUSD", "yf": "GC=F", "block_on_fallback": true, "decimals": 2, "pip": 0.1, "usd_leg": "quote", "eq_tol": 0.5,
-      "stop_buffer": {"spread": 0.3, "wick_1m": 1.0, "unit": "USD per oz", "status": "DEFAULT - pending Hilda's broker spread", "basis": "1.3 total, as used in the 11 Nov X2 alert"}
+      "enabled": false, "_disabled": "kept for reference, not scanned and not on the dashboard; set enabled: true in instruments.local.json to bring it back",
+      "tv": "OANDA:XAUUSD", "yf": "GC=F", "block_on_fallback": true, "decimals": 2, "pip": 0.1, "point": 0.01, "usd_leg": "quote", "eq_tol": 0.5,
+      "stop_buffer": {"spread": 0.3, "wick_1m": 1.0, "unit": "USD per oz", "status": "DEFAULT - pending broker spread", "basis": "1.3 total, as used in the 11 Nov X2 alert"}
     },
     "EURUSD": {
-      "tv": "OANDA:EURUSD", "yf": "EURUSD=X", "decimals": 5, "pip": 0.0001, "usd_leg": "quote", "eq_tol": 0.0002,
-      "stop_buffer": {"spread": 0.00008, "wick_1m": 0.00012, "unit": "price (0.0001 = 1 pip)", "status": "DEFAULT - pending Hilda's broker spread", "basis": "0.8 pip spread + 1.2 pip wick"}
+      "tv": "CAPITALCOM:EURUSD", "yf": "EURUSD=X", "decimals": 5, "pip": 0.0001, "point": 0.00001, "usd_leg": "quote", "eq_tol": 0.0002,
+      "corr_group": "USD", "dxy_relation": "inverse",
+      "stop_buffer": {"spread": 0.00008, "wick_1m": 0.00012, "unit": "price (0.0001 = 1 pip)", "status": "DEFAULT PLACEHOLDER - enter your Capital.com EURUSD spread", "basis": "0.8 pip spread + 1.2 pip wick"}
     },
     "GBPUSD": {
-      "tv": "OANDA:GBPUSD", "yf": "GBPUSD=X", "decimals": 5, "pip": 0.0001, "usd_leg": "quote", "eq_tol": 0.0002,
-      "stop_buffer": {"spread": 0.0001, "wick_1m": 0.00015, "unit": "price (0.0001 = 1 pip)", "status": "DEFAULT - pending Hilda's broker spread", "basis": "1.0 pip spread + 1.5 pip wick"}
+      "tv": "CAPITALCOM:GBPUSD", "yf": "GBPUSD=X", "decimals": 5, "pip": 0.0001, "point": 0.00001, "usd_leg": "quote", "eq_tol": 0.0002,
+      "corr_group": "USD", "dxy_relation": "inverse",
+      "stop_buffer": {"spread": 0.0001, "wick_1m": 0.00015, "unit": "price (0.0001 = 1 pip)", "status": "DEFAULT PLACEHOLDER - enter your Capital.com GBPUSD spread", "basis": "1.0 pip spread + 1.5 pip wick"}
     },
     "DXY": {
-      "tv": "TVC:DXY", "yf": "DX-Y.NYB", "decimals": 3, "pip": 0.01, "usd_leg": "index", "confluence_only": true, "eq_tol": 0.02,
-      "stop_buffer": {"spread": 0.0, "wick_1m": 0.0, "unit": "n/a", "status": "confluence only - never traded"}
+      "tv": "TVC:DXY", "yf": "DX-Y.NYB", "decimals": 3, "pip": 0.01, "point": 0.001, "usd_leg": "index", "confluence_only": true, "eq_tol": 0.02,
+      "daily_open_sast_hours": [2], "_daily": "TVC:DXY daily bars open 00:00 UTC (02:00 SAST), not at the 17:00 New York FX roll",
+      "stop_buffer": {"spread": 0.0, "wick_1m": 0.0, "unit": "n/a", "status": "context only - never traded, no setups, no alerts"}
     }
   },
   "risk": {

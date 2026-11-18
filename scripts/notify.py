@@ -9,8 +9,8 @@ Configuration (environment variables, or a git-ignored .env file - see .env.exam
   SMTP_SECURITY = starttls (default) | ssl | none
   NOTIFY_CHANNELS = telegram,email (default: every channel that is configured)
 
-    python3 scripts/notify.py --alert alerts/2026-11-12_N10_STOP.md --chart charts/nas_N10_1112_stop.png \
-        --id N10 --event STOP [--log-field instrument=NAS100 --log-field r=-1 ...] [--dry-run]
+    python3 scripts/notify.py --alert alerts/2026-11-12_N10_STOP.md --chart charts/us100_N10_1112_stop.png \
+        --id N10 --event STOP [--log-field instrument=US100 --log-field r=-1 ...] [--dry-run]
     python3 scripts/notify.py --check-config
 Exit codes: 0 delivered (or dry run / already delivered), 1 delivery failed on every channel, 2 usage/config error.
 """

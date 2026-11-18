@@ -65,7 +65,7 @@ def test_float_noise_exact_2R_still_passes():
 # ------------------------------------------------------------- account state
 def closed(sid, t, r, risk=0.5, event="STOP", targets=1, extra=()):
     evs = [{"event": "NEW", "time": t, "price": None, "r": None}, *extra, {"event": event, "time": t, "price": 1, "r": r}]
-    return {"id": sid, "instrument": "NAS100", "direction": "short", "risk_pct": risk, "status": "closed_stop",
+    return {"id": sid, "instrument": "US100", "direction": "short", "risk_pct": risk, "status": "closed_stop",
             "targets": [{"name": f"TP{i+1}", "price": 1} for i in range(targets)], "events": evs}
 
 
@@ -109,7 +109,7 @@ def test_drawdown_cap_locks_across_days_and_reset_clears():
 
 def test_headroom_counts_open_risk():
     s = [closed(f"N{i}", "2026-01-15T08:0%d:00+02:00" % i, -1.0) for i in range(2)]          # -1.0% today
-    s.append({"id": "N5", "instrument": "NAS100", "direction": "short", "risk_pct": 0.5, "status": "filled", "targets": [{}, {}]})
+    s.append({"id": "N5", "instrument": "US100", "direction": "short", "risk_pct": 0.5, "status": "filled", "targets": [{}, {}]})
     rs = riskstate.risk_state(s, NOW)
     assert rs["open_risk_pct"] == 0.5
     assert riskstate.headroom(rs, 0.5)["allowed"]                                            # -1 -0.5 -0.5 = -2.0 ok
@@ -139,7 +139,7 @@ def seed(root, setups):
         (d / f"{s['id']}.json").write_text(json.dumps(s))
         for e in s["events"]:                       # already delivered earlier today
             alert_log.add(str(root / "state" / "alerts_log.csv"), {"date": "2026-01-15", "setup_id": s["id"], "event": e["event"],
-                                                                   "instrument": "NAS100", "r": e.get("r")})
+                                                                   "instrument": "US100", "r": e.get("r")})
 
 
 def test_watch_locks_blocks_new_setups_and_alerts_once(env, tg):

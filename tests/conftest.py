@@ -7,7 +7,7 @@ for sub in ("lib", "scripts", "examples", *[os.path.join(".claude", "skills", s,
 
 import pytest  # noqa: E402
 
-EXAMPLE_BARS = os.path.join(ROOT, "examples", "EXAMPLE_bars_NAS100_1m.csv")
+EXAMPLE_BARS = os.path.join(ROOT, "examples", "EXAMPLE_bars_US100_1m.csv")
 EXAMPLE_SETUP = os.path.join(ROOT, "examples", "EXAMPLE_setup_EX1.json")
 
 
@@ -30,6 +30,6 @@ def example_setup():
 @pytest.fixture
 def short_setup():
     """Minimal pending short, FABRICATED numbers."""
-    return {"id": "T1", "instrument": "NAS100", "direction": "short", "entry": 100.0, "stop": 110.0,
+    return {"id": "T1", "instrument": "US100", "direction": "short", "entry": 100.0, "stop": 110.0,
             "sweep": {"extreme": 105.0}, "targets": [{"name": "TP1", "price": 80.0}, {"name": "TP2", "price": 70.0}],
             "status": "pending", "alert_time": "2026-01-15T09:00:00+02:00", "events": []}

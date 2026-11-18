@@ -1,13 +1,13 @@
 {
   "_comment": "EXAMPLE DATA (FABRICATED). A made-up week (Mon 12 - Thu 15 Jan 2026) of closed setups so the dashboard, risk meters and weekly recap have something to show offline. Not market data, not results. Expanded by scripts/dashboard.py --example.",
   "setups": [
-    {"id": "N7", "date": "2026-01-12", "instrument": "NAS100", "direction": "short", "kz": "London Open", "model": "Unicorn", "label": "with-bias",
+    {"id": "N7", "date": "2026-01-12", "instrument": "US100", "direction": "short", "kz": "London Open", "model": "Unicorn", "label": "with-bias",
      "entry": 20110.0, "stop": 20140.0, "targets": [20044.0, 20017.0], "events": [["FILLED", "09:41", 0], ["TP1", "09:58", 2.2], ["TP2", "10:31", 3.1]], "status": "closed_tp2"},
     {"id": "E3", "date": "2026-01-12", "instrument": "EURUSD", "direction": "short", "kz": "NY AM", "model": "ICT 2022 model", "label": "with-bias",
      "entry": 1.16012, "stop": 1.16081, "targets": [1.15872, 1.15790], "events": [["FILLED", "14:21", 0], ["STOP", "14:52", -1.0]], "status": "closed_stop"},
     {"id": "G2", "date": "2026-01-13", "instrument": "GBPUSD", "direction": "short", "kz": "London Open", "model": "Core", "label": "with-bias",
      "entry": 1.32055, "stop": 1.32131, "targets": [1.31895, 1.31702], "events": [["FILLED", "09:33", 0], ["TP1", "10:05", 2.1], ["BE", "10:44", 0.0]], "status": "closed_be"},
-    {"id": "N8", "date": "2026-01-13", "instrument": "NAS100", "direction": "long", "kz": "NY AM", "model": "ICT 2022 model", "label": "with-bias",
+    {"id": "N8", "date": "2026-01-13", "instrument": "US100", "direction": "long", "kz": "NY AM", "model": "ICT 2022 model", "label": "with-bias",
      "entry": 20018.0, "stop": 19996.0, "targets": [20066.0, 20102.0], "events": [["FILLED", "14:37", 0], ["STOP", "15:02", -1.0]], "status": "closed_stop"},
     {"id": "X2", "date": "2026-01-14", "instrument": "XAUUSD", "direction": "long", "kz": "London Open", "model": "Unicorn", "label": "with-bias",
      "entry": 4005.8, "stop": 4001.9, "targets": [4014.4], "events": [["FILLED", "09:52", 0], ["TP1", "10:40", 2.2]], "status": "closed_tp1"},

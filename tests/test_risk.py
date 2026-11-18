@@ -48,7 +48,7 @@ def test_cli_rejects_dxy(capsys):
 
 
 def test_standalone_and_correlated_risk():
-    assert ps.risk_pct_for("NAS100", "short", [])["risk_pct"] == 0.5
+    assert ps.risk_pct_for("US100", "short", [])["risk_pct"] == 0.5
     # EUR short + GBP short = same USD-long group -> 0.25% each
     r = ps.risk_pct_for("EURUSD", "short", [("GBPUSD", "short")])
     assert r["mode"] == "correlated" and r["risk_pct"] == 0.25
@@ -67,3 +67,16 @@ def test_size_formula():
     s = ps.size(0.5, 29.0, equity=10000, value_per_point=1.0)
     assert s["risk_cash"] == 50.0 and s["units"] == round(50 / 29, 4)
     assert "equity x 0.005" in s["formula"]
+
+
+def test_us_indices_share_one_group_per_direction():
+    # US100 + US500 same direction = one correlated group with one 1% cap
+    assert ps.correlation_group("US100", "short") == ps.correlation_group("CAPITALCOM:US500", "short") == "US-indices-short"
+    r = ps.risk_pct_for("US500", "short", [("US100", "short", 0.5)])
+    assert r["mode"] == "correlated" and r["risk_pct"] == 0.25 and r["group_after_pct"] == 0.75
+    assert ps.risk_pct_for("US500", "short", [("US100", "short", 0.5), ("US500", "short", 0.25), ("US100", "short", 0.25)])["allowed"] is False
+    # opposite directions are not stacked; indices and FX are separate families
+    assert ps.risk_pct_for("US500", "long", [("US100", "short", 0.5)])["risk_pct"] == 0.5
+    assert ps.risk_pct_for("EURUSD", "long", [("US100", "short", 0.5)])["risk_pct"] == 0.5
+    # EURUSD long + GBPUSD long are both short the dollar (= short DXY): one group
+    assert ps.risk_pct_for("GBPUSD", "long", [("EURUSD", "long", 0.5)])["group"] == "USD-short"

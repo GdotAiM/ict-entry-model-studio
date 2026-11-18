@@ -1,6 +1,6 @@
 # ict-entry-model-studio
 
-A Claude Code project that watches **NAS100, XAUUSD, EURUSD and GBPUSD** (with **DXY** as confluence) for **ICT entry setups**
+A Claude Code project that watches **US100, XAUUSD, EURUSD and GBPUSD** (with **DXY** as confluence) for **ICT entry setups**
 during the kill zones, and writes an alert for every valid setup and every status change: fill, TP1, TP2, stop, breakeven,
 void, invalid, cancelled. Each alert names the model and its Charter stage and comes with a marked-up chart.
 
@@ -122,11 +122,11 @@ tests/                             pytest (no network)
 4. Live data: `pip install pandas matplotlib yfinance`, then a TradingView backend (neither needs a TradingView login; data may be delayed and can time out):
    - **TradingView-API** ([Mathieu2301/TradingView-API](https://github.com/Mathieu2301/TradingView-API), tried first): needs Node 20.19+. Run `cd tools/tradingview-bridge && npm install` once. The bridge (`bridge.mjs`) only calls `getCandles`, anonymously, and prints JSON. It is read-only like the rest of the project.
    - **tvDatafeed** (second): `pip install git+https://github.com/rongardF/tvdatafeed.git`.
-   - `TV_BACKEND=auto|node|tvdatafeed` in `.env` forces one. Either one counts as TradingView data; the bar metadata and alerts name the backend that answered. Only when both fail does the yfinance FALLBACK (or NO DATA for NAS100 / XAUUSD) apply.
+   - `TV_BACKEND=auto|node|tvdatafeed` in `.env` forces one. Either one counts as TradingView data; the bar metadata and alerts name the backend that answered. Only when both fail does the yfinance FALLBACK (or NO DATA for US100 / XAUUSD) apply.
    - Anonymous TradingView-API access is limited (the library reports about 7,000 one-minute bars), which is more than the 1,000 this project requests.
 5. Stop buffers: the `stop_buffer` values in `config/instruments.json` are **defaults pending your broker's spreads**. Put your real
    spread and normal 1m wick per instrument in `config/instruments.local.json` (git-ignored), for example
-   `{"instruments": {"NAS100": {"stop_buffer": {"spread": 2.0, "wick_1m": 7.0, "status": "my broker, Nov 2026"}}}}`.
+   `{"instruments": {"US100": {"stop_buffer": {"spread": 2.0, "wick_1m": 7.0, "status": "my broker, Nov 2026"}}}}`.
 6. Alerts to your phone: `cp .env.example .env` and fill in Telegram and/or SMTP (see [Notifications](#notifications)).
 7. Optional: `export TEAM_FINDINGS_DIR=/path/to/findings` so the bias reader and liquidity mapper also read a wider team's `bias.md`, `liquidity.md` and `intermarket.md`, and flag any that are stale.
 8. Run `claude` in the repo root. Claude Code loads `CLAUDE.md`, `.claude/agents/`, `.claude/skills/` and `.claude/commands/` automatically. Check with `/agents`.
@@ -190,7 +190,7 @@ environment variables or a git-ignored `.env` file (template: [.env.example](.en
 `SMTP_FROM`, `SMTP_TO`, and optionally `NOTIFY_CHANNELS`.
 ```bash
 python3 scripts/notify.py --check-config
-python3 scripts/notify.py --alert alerts/2026-11-12_N1_NEW.md --chart charts/nas_N1_1112_new.png --id N1 --event NEW --dry-run
+python3 scripts/notify.py --alert alerts/2026-11-12_N1_NEW.md --chart charts/us100_N1_1112_new.png --id N1 --event NEW --dry-run
 ```
 - **Dedupe:** if `state/alerts_log.csv` already has (setup_id, event), nothing is sent.
 - **Logging:** the row is written only when at least one channel succeeded. Dry runs never log.
@@ -207,25 +207,25 @@ python3 scripts/notify.py --alert alerts/2026-11-12_N1_NEW.md --chart charts/nas
 | Agent / command | Prompt |
 |---|---|
 | ict-bias-reader | "Use ict-bias-reader for today." |
-| liquidity-mapper | "Use liquidity-mapper for NAS100 and XAUUSD, equal-high tolerance 3 points on NAS." |
+| liquidity-mapper | "Use liquidity-mapper for US100 and XAUUSD, equal-high tolerance 3 points on US100." |
 | killzone-scanner | "Run killzone-scanner now for all four instruments." |
-| setup-validator | "Use setup-validator on drafts/candidate_NAS100_1051.json. Bias is bull." |
+| setup-validator | "Use setup-validator on drafts/candidate_US100_1051.json. Bias is bull." |
 | setup-lifecycle-tracker | "Use setup-lifecycle-tracker on all open setups." |
 | chart-annotator | "Use chart-annotator for N6 TP1." |
 | alert-writer | "Use alert-writer for N6 STOP at 12:44, 1m high 28248.8." |
 | trade-journal | "Use trade-journal for this week; split with-bias vs COUNTER-TREND." |
 | /kz-watch | `/kz-watch` |
 | watch.py | `python3 scripts/watch.py --dry-run` (no Claude; preview without sending) |
-| ad hoc | "Is the 28239 raid + MSS on NAS a valid short with entry 28219 and TP1 28159.4? Run the validator." |
+| ad hoc | "Is the 28239 raid + MSS on US100 a valid short with entry 28219 and TP1 28159.4? Run the validator." |
 
 Run the scripts directly:
 ```bash
 python3 .claude/skills/killzones/scripts/killzone.py table --date 2026-11-12
-python3 .claude/skills/market-data/scripts/fetch_bars.py NAS100 1m --bars 600 --out drafts/bars/NAS100_1m.csv
-python3 .claude/skills/setup-detection/scripts/detect.py --csv drafts/bars/NAS100_1m.csv --direction short --level 28167.1
-python3 .claude/skills/risk-rules/scripts/validate_setup.py --instrument NAS100 --direction short --entry 28219 --raid-extreme 28239 --tp 28159.4 --tp 28108.7 --bias bull
+python3 .claude/skills/market-data/scripts/fetch_bars.py US100 1m --bars 600 --out drafts/bars/US100_1m.csv
+python3 .claude/skills/setup-detection/scripts/detect.py --csv drafts/bars/US100_1m.csv --direction short --level 28167.1
+python3 .claude/skills/risk-rules/scripts/validate_setup.py --instrument US100 --direction short --entry 28219 --raid-extreme 28239 --tp 28159.4 --tp 28108.7 --bias bull
 python3 .claude/skills/risk-rules/scripts/position_size.py --risk-pts 29 --equity 10000
-python3 scripts/lifecycle.py --setup state/setups/N6.json --bars drafts/bars/NAS100_1m.csv --write
+python3 scripts/lifecycle.py --setup state/setups/N6.json --bars drafts/bars/US100_1m.csv --write
 python3 scripts/alert_log.py check --id N6 --event TP1
 python3 scripts/recap.py --from 2026-11-09
 ```
@@ -239,7 +239,7 @@ A full offline walkthrough on fabricated data is in [examples/README.md](example
 - **Labels:** a setup against the daily bias is labelled COUNTER-TREND.
 - **Closed bars only:** a bar is used only once it has closed (a 09:31 bar is available from 09:32:00). The forming bar is never scanned or used for fills and stops.
 - **Lifecycle:** a setup is void if TP1 trades before the fill, invalid if the raid extreme breaks before the fill, and cancelled at the end of the kill zone if unfilled. Ambiguous bars count as a stop first. A gap through the stop fills at the bar's open.
-- **Data:** TradingView first. yfinance is a fallback only and is always disclosed. For NAS100 and XAUUSD the fallback is *blocked* (the proxies are futures, NQ=F and GC=F, whose basis to the OANDA CFD can exceed the stop buffer), so those instruments report NO DATA instead; set `"block_on_fallback": false` in `config/instruments.local.json` to allow a disclosed fallback. Prices are never invented.
+- **Data:** TradingView first. yfinance is a fallback only and is always disclosed. For US100 and XAUUSD the fallback is *blocked* (the proxies are futures, NQ=F and GC=F, whose basis to the OANDA CFD can exceed the stop buffer), so those instruments report NO DATA instead; set `"block_on_fallback": false` in `config/instruments.local.json` to allow a disclosed fallback. Prices are never invented.
 
 ## License
 MIT. See [LICENSE](LICENSE). This project is not affiliated with ICT or TradingView.

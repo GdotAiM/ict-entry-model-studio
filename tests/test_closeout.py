@@ -73,7 +73,7 @@ def test_cli_cancels_by_clock(tmp_path, short_setup):
 # ---------------------------------------------------------------- full watch cycle
 def run(env, iso):
     return watch.run_cycle(datetime.fromisoformat(iso), root=str(env), bars_dir=str(env / "bars"),
-                           instruments=["NAS100"], env=TG, charts=False)
+                           instruments=["US100"], env=TG, charts=False)
 
 
 def _pending_setup(env, killzone_end=None):

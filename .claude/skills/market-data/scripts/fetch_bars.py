@@ -4,7 +4,7 @@
 Writes a CSV (time,open,high,low,close; time = ISO 8601 in SAST) and a sidecar <csv>.meta.json:
     {"instrument","symbol","interval","source","fallback","fallback_reason","rows","first","last","fetched_at_sast"}
 
-    python3 .claude/skills/market-data/scripts/fetch_bars.py NAS100 1m --bars 600 --out drafts/bars/NAS100_1m.csv
+    python3 .claude/skills/market-data/scripts/fetch_bars.py US100 1m --bars 600 --out drafts/bars/US100_1m.csv
     python3 .claude/skills/market-data/scripts/fetch_bars.py DXY 1d --out drafts/bars/DXY_1d.csv
 
 Rules enforced here:
@@ -46,7 +46,22 @@ def label_daily(rows: list[dict]) -> list[dict]:
     return [out[k] for k in sorted(out)]
 
 
-def _tvapi_fetch(tv_symbol: str, interval: str, n: int, run=subprocess.run, bridge_dir: str = BRIDGE_DIR, node: str = "node"):
+def daily_open_hours(tv_symbol: str, cfg: dict | None = None) -> tuple:
+    """SAST hours at which this symbol's daily bars may open. Default: the 17:00 New York roll (23:00 or 00:00 SAST,
+    DST-dependent), true for Capital.com and OANDA. An instrument can override it with "daily_open_sast_hours"
+    (TVC:DXY opens at 00:00 UTC = 02:00 SAST). label_daily()'s +2h shift gives the right date for all of these."""
+    try:
+        cfg = cfg or load_config()
+        for spec in cfg["instruments"].values():
+            if spec.get("tv", "").upper() == tv_symbol.upper() and spec.get("daily_open_sast_hours"):
+                return tuple(int(h) for h in spec["daily_open_sast_hours"])
+    except (OSError, ValueError, KeyError):
+        pass
+    return (23, 0)
+
+
+def _tvapi_fetch(tv_symbol: str, interval: str, n: int, run=subprocess.run, bridge_dir: str = BRIDGE_DIR, node: str = "node",
+                 daily_hours: tuple | None = None):
     """Candles from Mathieu2301/TradingView-API through tools/tradingview-bridge/bridge.mjs (Node 20.19+, read-only,
     anonymous). `run` is injectable for tests. Raises RuntimeError on any problem so the caller can try the next backend."""
     script = os.path.join(bridge_dir, "bridge.mjs")
@@ -71,10 +86,11 @@ def _tvapi_fetch(tv_symbol: str, interval: str, n: int, run=subprocess.run, brid
     if not rows:
         raise RuntimeError("TradingView-API returned no bars")
     if interval == "1d":
-        # label_daily() assumes OANDA-style daily bars that open at the 17:00 New York session start (23:00/00:00 SAST).
-        # If the feed aligns them differently the dates would be wrong, so refuse instead of silently mis-dating.
-        if any(datetime.fromisoformat(r["time"]).hour not in (23, 0) for r in rows[-5:]):
-            raise RuntimeError("TradingView-API daily bars are not aligned to the 17:00 NY session open; refusing to mis-date them")
+        # label_daily() assumes daily bars open at the 17:00 New York session start (23:00/00:00 SAST) unless the
+        # instrument says otherwise (daily_open_hours). Any other alignment would mis-date them, so refuse.
+        hours = daily_hours or daily_open_hours(tv_symbol)
+        if any(datetime.fromisoformat(r["time"]).hour not in hours for r in rows[-5:]):
+            raise RuntimeError(f"TradingView-API daily bars for {tv_symbol} do not open at {hours} SAST; refusing to mis-date them")
     return rows
 
 

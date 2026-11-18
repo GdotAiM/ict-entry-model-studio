@@ -2,8 +2,8 @@
 """Liquidity map from intraday bars: PDH/PDL, Asia range, session/week extremes, equal highs/lows.
 Each level is tagged buy-side (above price) or sell-side (below) and swept/untouched since it formed.
 
-    python3 .claude/skills/liquidity/scripts/liquidity_levels.py --csv drafts/bars/NAS100_5m.csv \
-        --date 2026-11-12 [--daily drafts/bars/NAS100_1d.csv] [--eq-tol 3.0]
+    python3 .claude/skills/liquidity/scripts/liquidity_levels.py --csv drafts/bars/US100_5m.csv \
+        --date 2026-11-12 [--daily drafts/bars/US100_1d.csv] [--eq-tol 3.0]
 Bar times must be ISO 8601 with offset (SAST from fetch_bars.py). Asia = 20:00-00:00 New York, DST-correct.
 """
 from __future__ import annotations

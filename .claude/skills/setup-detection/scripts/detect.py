@@ -4,7 +4,7 @@
 Sequence checked: liquidity sweep / turtle soup -> market structure shift (MSS) with displacement
 -> fair value gap (FVG) in the displacement leg -> entry at the FVG or in the OTE zone (62-79%).
 
-    python3 .claude/skills/setup-detection/scripts/detect.py --csv drafts/bars/NAS100_1m.csv \
+    python3 .claude/skills/setup-detection/scripts/detect.py --csv drafts/bars/US100_1m.csv \
         --direction short --level 28167.1 [--level 28154.4 ...] [--since "2026-11-12T09:00"]
 
 Output: JSON list of candidates (one per swept level that completed the sequence) or partial

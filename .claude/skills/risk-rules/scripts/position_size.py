@@ -1,12 +1,17 @@
 #!/usr/bin/env python3
-"""Risk % and position size. Never sizes a live order; it prints a formula and numbers for Hilda to check.
+"""Risk % and position size. Never sizes a live order; it prints a formula and numbers for you to check.
 
 Risk rules:
   * Standalone trade: 0.5% of equity.
   * Correlated trades (same group): 0.25% each for the 2nd and later, max 4 open in the group, 1% group maximum,
     counted on the risk each open trade really carries (a 0.5% standalone + 0.25% + 0.25% = 1.0% = group full).
-    Groups: USD-short (EURUSD long, GBPUSD long, XAUUSD long), USD-long (EURUSD short, GBPUSD short, XAUUSD short),
-    NAS100-long / NAS100-short (same-direction NAS trades are correlated with each other).
+    Groups (one 1% cap each):
+      US-indices-long / US-indices-short: US100 and US500 in the same direction (they move together, ~0.9+ correlation).
+      USD-short (EURUSD long, GBPUSD long[, XAUUSD long]) / USD-long (EURUSD short, GBPUSD short[, XAUUSD short]).
+    DXY is context only and never traded, so it carries no exposure of its own. "DXY-inverse exposure" is already
+    what the USD groups count: EURUSD long + GBPUSD long are both short the dollar (= short DXY), so they share one cap.
+    Indices are NOT put in a USD group: the index/dollar link flips sign by regime and is too loose for a hard cap;
+    the 2% daily loss cap and the 5% drawdown lock still cover a bad day across both families.
   * Size = equity x risk% / (risk points x value per point per unit).
 
     python3 .claude/skills/risk-rules/scripts/position_size.py --risk-pts 29 [--equity 10000] [--value-per-point 1] \
@@ -17,10 +22,14 @@ from __future__ import annotations
 import argparse, json, sys
 
 STANDALONE, CORR_EACH, CORR_MAX, GROUP_MAX = 0.5, 0.25, 4, 1.0
-USD_QUOTE = {"EURUSD", "GBPUSD", "XAUUSD"}  # long these = short USD
+USD_QUOTE = {"EURUSD", "GBPUSD", "XAUUSD"}  # long these = short USD (XAUUSD is switched off in config, kept here)
+US_INDICES = {"US100", "US500", "NAS100"}   # NAS100 = the old OANDA name, so older journal entries still group
 
 
 def correlation_group(instrument: str, direction: str) -> str:
+    instrument = instrument.upper().split(":")[-1]
+    if instrument in US_INDICES:
+        return f"US-indices-{direction}"
     if instrument in USD_QUOTE:
         return "USD-short" if direction == "long" else "USD-long"
     return f"{instrument}-{direction}"
@@ -75,7 +84,7 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--risk-pts", type=float, required=True); p.add_argument("--equity", type=float)
     p.add_argument("--value-per-point", type=float, default=1.0)
-    p.add_argument("--instrument", default="NAS100"); p.add_argument("--direction", choices=["long", "short"], default="long")
+    p.add_argument("--instrument", default="US100"); p.add_argument("--direction", choices=["long", "short"], default="long")
     p.add_argument("--open", action="append", default=[], help="open/pending trade as INSTRUMENT:direction[:risk_pct] (repeatable)")
     a = p.parse_args(argv)
     try:

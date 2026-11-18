@@ -9,7 +9,7 @@ Rules:
   4. Direction against the daily bias -> label COUNTER-TREND (allowed, must be labelled). Neutral bias -> "no clear bias".
   5. Entry must be between stop and targets; targets on the profit side.
 
-    python3 .claude/skills/risk-rules/scripts/validate_setup.py --instrument NAS100 --direction short \
+    python3 .claude/skills/risk-rules/scripts/validate_setup.py --instrument US100 --direction short \
         --entry 28219.0 --raid-extreme 28239.0 --tp 28159.4 --tp 28108.7 --bias bull
     python3 .claude/skills/risk-rules/scripts/validate_setup.py --setup drafts/setup_N6.json --write
 

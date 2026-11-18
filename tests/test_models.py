@@ -56,7 +56,7 @@ def test_charter_friday_and_outside_window():
 
 
 def test_pip_targets_not_applied_to_indices():
-    ctx = {**FULL, "instrument": "NAS100", "tp1_dist": 60.0, "pip": 1.0}
+    ctx = {**FULL, "instrument": "US100", "tp1_dist": 60.0, "pip": 1.0}
     ch = _by(md.charter_models(ctx))
     assert ch["M12"]["checks"]["target ~20 pips (FX only)"] is None
     assert ch["M1"]["checks"]["target 15-20 pips (FX only)"] is None

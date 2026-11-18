@@ -5,10 +5,10 @@ Written by `setup-validator`, updated by `setup-lifecycle-tracker`. Example (FAB
 
 | Field | Type | Notes |
 |---|---|---|
-| id | string | `N#` NAS100, `X#` XAUUSD, `E#` EURUSD, `G#` GBPUSD; never reused |
+| id | string | `N#` US100, `X#` XAUUSD, `E#` EURUSD, `G#` GBPUSD; never reused |
 | date | `YYYY-MM-DD` | SAST date of the alert |
-| instrument / symbol | string | `NAS100` / `OANDA:NAS100USD` |
-| decimals | int | display precision (NAS 1, XAU 2, FX 5) |
+| instrument / symbol | string | `US100` / `CAPITALCOM:US100` |
+| decimals | int | display precision (US100 1, XAU 2, FX 5) |
 | timeframe | string | entry timeframe, normally `1m` |
 | direction | `long`\|`short` | |
 | killzone, killzone_end, killzone_end_sast | string | from `killzone.py`; `killzone_end` is ISO and drives CANCELLED |

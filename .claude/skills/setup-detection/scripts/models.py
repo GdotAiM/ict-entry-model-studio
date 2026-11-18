@@ -6,7 +6,7 @@ Honesty rules:
   * Every Charter check is either computed from bars/context (True/False) or None = "not computable here".
   * status: "detected" (all computable checks pass, nothing essential missing), "partial" (>= half pass),
     "not detected", or "not mechanical" (the model depends on data this project does not have, e.g. COT, seasonality).
-  * Pip-sized targets in the Charter models are FX-calibrated. For NAS100 / XAUUSD those checks are None, not False.
+  * Pip-sized targets in the Charter models are FX-calibrated. For US100 / US500 / XAUUSD those checks are None, not False.
 
     python3 .claude/skills/setup-detection/scripts/models.py --csv bars.csv --direction short --level 20030 [--context ctx.json]
 """
@@ -20,7 +20,7 @@ import detect  # noqa: E402
 
 NY = ZoneInfo("America/New_York")
 FX = {"EURUSD", "GBPUSD"}
-INDICES = {"NAS100"}
+INDICES = {"US100", "US500", "NAS100"}  # NAS100 = old OANDA name, kept so older setups still classify
 
 
 # ---------------------------------------------------------------- Unicorn

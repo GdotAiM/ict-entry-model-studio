@@ -63,7 +63,7 @@ def test_locked_state_shows_on_dashboard(tmp_path):
     d = tmp_path / "state" / "setups"; d.mkdir(parents=True)
     for i in range(4):
         t = f"2026-01-15T08:0{i}:00+02:00"
-        (d / f"N{i}.json").write_text(json.dumps({"id": f"N{i}", "instrument": "NAS100", "direction": "short", "risk_pct": 0.5,
+        (d / f"N{i}.json").write_text(json.dumps({"id": f"N{i}", "instrument": "US100", "direction": "short", "risk_pct": 0.5,
                                                   "status": "closed_stop", "targets": [{"name": "TP1", "price": 1, "r": 2}], "alert_time": t,
                                                   "date": "2026-01-15", "entry": 1, "stop": 2, "killzone": "London Open (x)",
                                                   "events": [{"event": "STOP", "time": t, "price": 2, "r": -1.0}]}))
@@ -101,8 +101,8 @@ def test_watch_saves_closed_bars_for_the_dashboard(tmp_path):
     from conftest import ROOT
     b = tmp_path / "bars"; b.mkdir()
     for iv in ("1m", "1d"):
-        shutil.copy(os.path.join(ROOT, "examples", f"EXAMPLE_bars_NAS100_{iv}.csv"), b / f"NAS100_{iv}.csv")
+        shutil.copy(os.path.join(ROOT, "examples", f"EXAMPLE_bars_US100_{iv}.csv"), b / f"US100_{iv}.csv")
     tw.cycle(tmp_path, "09:27", dry_run=True)
-    rows, meta = db.load_bars(str(tmp_path), "NAS100")
+    rows, meta = db.load_bars(str(tmp_path), "US100")
     assert rows and rows[-1]["time"] == "2026-01-15T09:26:00+02:00"              # closed bars only
     assert meta["saved_at"].startswith("2026-01-15T09:27")

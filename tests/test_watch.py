@@ -11,8 +11,8 @@ TG = {"TELEGRAM_BOT_TOKEN": "123:FAKE", "TELEGRAM_CHAT_ID": "42"}
 @pytest.fixture
 def env(tmp_path):
     b = tmp_path / "bars"; b.mkdir()
-    shutil.copy(os.path.join(ROOT, "examples", "EXAMPLE_bars_NAS100_1m.csv"), b / "NAS100_1m.csv")
-    shutil.copy(os.path.join(ROOT, "examples", "EXAMPLE_bars_NAS100_1d.csv"), b / "NAS100_1d.csv")
+    shutil.copy(os.path.join(ROOT, "examples", "EXAMPLE_bars_US100_1m.csv"), b / "US100_1m.csv")
+    shutil.copy(os.path.join(ROOT, "examples", "EXAMPLE_bars_US100_1d.csv"), b / "US100_1d.csv")
     return tmp_path
 
 
@@ -31,7 +31,7 @@ def tg(monkeypatch):
 def cycle(root, t, **kw):
     kw.setdefault("env", TG); kw.setdefault("charts", False)
     return watch.run_cycle(datetime.fromisoformat(f"2026-01-15T{t}:00+02:00"), root=str(root), bars_dir=str(root / "bars"),
-                           instruments=["NAS100"], **kw)
+                           instruments=["US100"], **kw)
 
 
 def test_replay_new_fill_tp_and_dedupe(env, tg):
@@ -80,7 +80,7 @@ def test_late_scanner_does_not_send_stale_burst(env, tg):
 
 def test_outside_killzone_no_scan(env, tg):
     r = watch.run_cycle(datetime.fromisoformat("2026-01-15T13:00:00+02:00"), root=str(env), bars_dir=str(env / "bars"),
-                        instruments=["NAS100"], env=TG, charts=False)
+                        instruments=["US100"], env=TG, charts=False)
     assert r["killzone"] is None and r["new"] == []
 
 
@@ -93,8 +93,8 @@ def test_chart_rendered_for_alert(env, tg):
 
 # ---------------------------------------------------------------- regressions / extra replay paths
 def _bars_from_example(env, keep_until, extra_rows):
-    """Rewrite the NAS100 1m file: example bars up to `keep_until` (HH:MM) plus FABRICATED extra rows."""
-    p = env / "bars" / "NAS100_1m.csv"
+    """Rewrite the US100 1m file: example bars up to `keep_until` (HH:MM) plus FABRICATED extra rows."""
+    p = env / "bars" / "US100_1m.csv"
     lines = [ln for ln in open(p, newline="").read().splitlines() if ln.startswith("time") or ln[11:16] <= keep_until]
     p.write_text("\n".join(lines + extra_rows) + "\n")
 
@@ -104,13 +104,13 @@ def test_no_rows_up_to_now_is_a_clean_no_data_error(env):
     cfg = watch.emconfig.load_config()
     b = watch.Bars(str(env / "bars"), datetime.fromisoformat("2026-01-15T08:00:00+02:00"), cfg)   # before the first bar
     with pytest.raises(LookupError, match="NO DATA"):
-        b.get("NAS100", "1m")
+        b.get("US100", "1m")
     r = watch.run_cycle(datetime.fromisoformat("2026-01-15T08:00:00+02:00"), root=str(env), bars_dir=str(env / "bars"),
-                        instruments=["NAS100"], env=TG, charts=False)
+                        instruments=["US100"], env=TG, charts=False)
     assert r["new"] == [] and all("NO DATA" in e for e in r["errors"])
 
 
-def _mark_fallback(env, inst="NAS100"):
+def _mark_fallback(env, inst="US100"):
     for iv in ("1m", "1d"):
         (env / "bars" / f"{inst}_{iv}.csv.meta.json").write_text(
             json.dumps({"source": "yfinance FALLBACK NQ=F (proxy)", "fallback": True}))
@@ -135,9 +135,9 @@ def test_fallback_blocks_lifecycle_of_open_setups_too(env, tg):
 def test_fallback_allowed_when_not_blocked_and_disclosed(env, tg):
     _mark_fallback(env)
     cfg = watch.emconfig.load_config()
-    cfg["instruments"]["NAS100"]["block_on_fallback"] = False
+    cfg["instruments"]["US100"]["block_on_fallback"] = False
     b = watch.Bars(str(env / "bars"), datetime.fromisoformat("2026-01-15T09:27:00+02:00"), cfg)
-    rows, meta = b.get("NAS100", "1m")
+    rows, meta = b.get("US100", "1m")
     assert rows and meta["fallback"] is True
 
 
@@ -159,7 +159,7 @@ def test_replay_cancelled_when_kill_zone_ends_unfilled(env, tg):
     _bars_from_example(env, "09:29", ["2026-01-15T12:00:00+02:00,19990,19999,19985,19995"])
     cycle(env, "09:27")
     r = watch.run_cycle(datetime.fromisoformat("2026-01-15T12:01:00+02:00"), root=str(env), bars_dir=str(env / "bars"),
-                        instruments=["NAS100"], env=TG, charts=False)
+                        instruments=["US100"], env=TG, charts=False)
     assert r["events"] == ["N1 CANCELLED"] and r["outbox"]["sent"][0]["event"] == "CANCELLED"
     res = recap.setup_results(alert_log.read(str(env / "state" / "alerts_log.csv")))
     assert res[0]["outcome"] == "CANCELLED" and res[0]["taken"] is False and res[0]["r"] == 0.0
@@ -169,13 +169,13 @@ def test_replay_cancelled_when_kill_zone_ends_unfilled(env, tg):
 def at(root, hhmmss, **kw):
     kw.setdefault("env", TG); kw.setdefault("charts", False)
     return watch.run_cycle(datetime.fromisoformat(f"2026-01-15T{hhmmss}+02:00"), root=str(root), bars_dir=str(root / "bars"),
-                           instruments=["NAS100"], **kw)
+                           instruments=["US100"], **kw)
 
 
 def test_bars_closed_boundary(env):
     cfg = watch.emconfig.load_config()
     def last(now):
-        return watch.Bars(str(env / "bars"), datetime.fromisoformat(f"2026-01-15T{now}+02:00"), cfg).get("NAS100", "1m")[0][-1]["time"][11:16]
+        return watch.Bars(str(env / "bars"), datetime.fromisoformat(f"2026-01-15T{now}+02:00"), cfg).get("US100", "1m")[0][-1]["time"][11:16]
     assert last("09:31:59") == "09:30"        # the 09:31 bar is still forming
     assert last("09:32:00") == "09:31"        # closes exactly now
     assert last("09:32:30") == "09:31"
@@ -199,3 +199,15 @@ def test_stop_inside_forming_minute_is_not_missed(env, tg):
     assert r["events"] == []
     r = at(env, "09:33:00")
     assert r["events"] == ["N1 STOP"]
+
+
+def test_scan_list_skips_dxy_and_switched_off_xauusd(env, tg):
+    seen = []
+    orig = watch.scan_instrument
+    try:
+        watch.scan_instrument = lambda inst, *a, **k: seen.append(inst) or []
+        watch.run_cycle(datetime.fromisoformat("2026-01-15T09:27:00+02:00"), root=str(env), bars_dir=str(env / "bars"),
+                        dry_run=True, env=TG, charts=False)
+    finally:
+        watch.scan_instrument = orig
+    assert seen == ["US100", "US500", "EURUSD", "GBPUSD"]

@@ -1,7 +1,7 @@
 """Shared config loader: config/instruments.json, overridden key-by-key by config/instruments.local.json (git-ignored).
 
-Stop buffers (spread + normal 1m wick) live in each instrument's "stop_buffer". They are DEFAULTS until Hilda
-enters her broker's spreads; validate_setup.py reads them from here and reports which values it used.
+Stop buffers (spread + normal 1m wick) live in each instrument's "stop_buffer". They are DEFAULT PLACEHOLDERS until the
+trader enters their Capital.com spreads; validate_setup.py reads them from here and reports which values it used.
 """
 from __future__ import annotations
 import json, os
@@ -33,6 +33,24 @@ def instrument(cfg: dict, name: str) -> dict:
         if key in (n.upper(), spec["tv"].upper()):
             return {"name": n, **spec}
     raise KeyError(f"unknown instrument {name!r}; known: {', '.join(cfg['instruments'])}")
+
+
+def watchlist(cfg: dict) -> list[str]:
+    """Instruments that are switched on (no "enabled": false), in config order, including context-only ones (DXY)."""
+    return [n for n, spec in cfg["instruments"].items() if spec.get("enabled", True) is not False]
+
+
+def tradeable(cfg: dict) -> list[str]:
+    """Switched-on instruments that get setups and alerts (watchlist minus confluence_only, i.e. minus DXY)."""
+    return [n for n in watchlist(cfg) if not cfg["instruments"][n].get("confluence_only")]
+
+
+def corr_group(cfg: dict, name: str) -> str | None:
+    """Correlation family used by the 1% group cap ("US-indices", "USD"); None = stands alone."""
+    try:
+        return instrument(cfg, name).get("corr_group")
+    except KeyError:
+        return None
 
 
 def stop_buffer(cfg: dict, name: str) -> dict:

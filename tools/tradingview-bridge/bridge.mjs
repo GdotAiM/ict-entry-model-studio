@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Read-only candle bridge for ict-entry-model-studio.
 //   node bridge.mjs <EXCHANGE:SYMBOL> <timeframe> <count>
-//   e.g. node bridge.mjs OANDA:NAS100USD 1 1000      (timeframe: 1 5 15 60 240 D)
+//   e.g. node bridge.mjs CAPITALCOM:US100 1 1000      (timeframe: 1 5 15 60 240 D)
 // Prints a JSON array [{time (unix seconds, bar OPEN), open, high, low, close, volume}] oldest first.
 // Uses ONLY getCandles from Mathieu2301/TradingView-API (anonymous, no login). Errors go to stderr, exit 1.
 import { getCandles } from '@mathieuc/tradingview/data';

@@ -32,7 +32,7 @@ import emconfig, riskstate, killzone, fetch_bars, mtf_bias, liquidity_levels, de
 import validate_setup, position_size, render_alert, check_alert, lifecycle, alert_log, notify, write_setups_md  # noqa: E402
 
 SAST, NY = ZoneInfo("Africa/Johannesburg"), ZoneInfo("America/New_York")
-PREFIX = {"NAS100": "N", "XAUUSD": "X", "EURUSD": "E", "GBPUSD": "G"}
+PREFIX = {"US100": "N", "US500": "S", "XAUUSD": "X", "EURUSD": "E", "GBPUSD": "G"}  # N kept for US100 (ex-NAS100) so old ids line up
 OPEN = {"pending", "filled", "tp1"}
 INTERVAL_MIN = {"1m": 1, "5m": 5, "15m": 15, "1h": 60, "4h": 240}
 LEVEL_RANK = ["PWH", "PWL", "PMH", "PML", "PDH", "PDL", "week", "Asia", "old", "equal", "KZ", "swing"]
@@ -63,7 +63,7 @@ class Bars:
         else:
             rows, meta = fetch_bars.fetch(inst, iv, self.n1m if iv == "1m" else 400, self.cfg)
         if meta.get("fallback") and self.cfg["instruments"][inst].get("block_on_fallback"):
-            # yfinance proxies for NAS100 / XAUUSD are futures (NQ=F, GC=F): their basis to the OANDA CFD can exceed the
+            # yfinance proxies for US100 / XAUUSD are futures (NQ=F, GC=F): their basis to the OANDA CFD can exceed the
             # stop buffer, so levels, fills and stops computed on them are not trustworthy. Treated as NO DATA.
             err = LookupError(f"NO DATA for {inst} {iv}: TradingView failed and the yfinance fallback ({meta.get('source')}) "
                               f"is a futures proxy blocked for {inst} (block_on_fallback; set it to false in "
@@ -331,7 +331,7 @@ def scan_instrument(inst: str, bars: Bars, st: State, now: datetime, kz: dict, c
              "confluence": [f"MTF bias {bias.get('label', bias.get('bias'))} (confidence {bias.get('confidence')})"]
                            + [r for r in bias.get("reasoning", []) if "confirms" in r]
                            + ([f"draw on liquidity {bias['draw']['name']} {bias['draw']['level']}"] if bias.get("draw") else []),
-             "caveats": ([rk["note"]] if rk.get("note") else []) + (["stop buffer is a DEFAULT pending Hilda's broker spreads"] if sb["is_default"] else [])
+             "caveats": ([rk["note"]] if rk.get("note") else []) + (["stop buffer is a DEFAULT PLACEHOLDER pending your Capital.com spread"] if sb["is_default"] else [])
                         + [r for r in bias.get("reasoning", []) if r.startswith("EXTENDED") or "DISAGREES" in r],
              "data_source": meta.get("source"), "fallback": bool(meta.get("fallback")),
              "validation": {"verdict": val["verdict"], "errors": val["errors"], "notes": val["notes"]},
@@ -348,7 +348,7 @@ def scan_instrument(inst: str, bars: Bars, st: State, now: datetime, kz: dict, c
 def _chart(s: dict, rows: list[dict], event: str, root: str) -> str | None:
     try:
         import render_chart
-        out = os.path.join(root, "charts", f"{s['instrument'].lower()[:3]}_{s['id']}_{s['date'][5:7]}{s['date'][8:10]}_{event.lower()}.png")
+        out = os.path.join(root, "charts", f"{s['instrument'].lower()}_{s['id']}_{s['date'][5:7]}{s['date'][8:10]}_{event.lower()}.png")
         return render_chart.render(s, rows, out, event)
     except Exception:  # noqa: BLE001 - chart is best effort; text still goes
         return None
@@ -478,7 +478,7 @@ def run_cycle(now: datetime, root: str = ROOT, bars_dir: str | None = None, dry_
     kz = killzone.in_watched_killzone(now, tuple(cfg.get("watch_killzones", killzone.DEFAULT_WATCHED)))
     report["killzone"] = kz["name"] if kz else None
     if kz:
-        for inst in instruments or [i for i in cfg["instruments"] if not cfg["instruments"][i].get("confluence_only")]:
+        for inst in instruments or emconfig.tradeable(cfg):   # switched-on, not context-only: US100 US500 EURUSD GBPUSD
             try:
                 new = scan_instrument(inst, bars, st, now, kz, cfg, st.setups(), rs)
             except LookupError as e:
