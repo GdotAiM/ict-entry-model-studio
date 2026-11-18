@@ -425,6 +425,28 @@ def lock_outbox(st: State, rs: dict, dry_run: bool, env, report: dict) -> None:
         report["failed"].append({**key, "errors": res.get("failed")})
 
 
+def save_bars(root: str, bars: Bars, keep: int = 600) -> None:
+    """Write the closed 1m bars of this cycle to state/bars/<INST>_1m.csv (+ .meta.json) so scripts/dashboard.py can draw
+    the setup charts without fetching anything. Best effort."""
+    d = os.path.join(root, "state", "bars")
+    for (inst, iv), (rows, meta) in list(bars.cache.items()):
+        if iv != "1m" or not rows:
+            continue
+        try:
+            os.makedirs(d, exist_ok=True)
+            path = os.path.join(d, f"{inst}_1m.csv")
+            with open(path + ".tmp", "w", newline="") as f:
+                w = csv.DictWriter(f, fieldnames=["time", "open", "high", "low", "close"])
+                w.writeheader()
+                for r in rows[-keep:]:
+                    w.writerow({k: r[k] for k in ("time", "open", "high", "low", "close")})
+            os.replace(path + ".tmp", path)
+            with open(path + ".meta.json", "w") as f:
+                json.dump({**meta, "saved_at": bars.now.isoformat()}, f)
+        except OSError:
+            pass
+
+
 # ---------------------------------------------------------------- cycle
 def run_cycle(now: datetime, root: str = ROOT, bars_dir: str | None = None, dry_run: bool = False, env=None,
               instruments: list[str] | None = None, charts: bool = True) -> dict:
@@ -480,7 +502,8 @@ def run_cycle(now: datetime, root: str = ROOT, bars_dir: str | None = None, dry_
     lock_outbox(st, rs, dry_run, env, report["outbox"])
     report["risk"] = {k: rs[k] for k in ("trading_day", "daily_pct", "drawdown_pct", "open_risk_pct", "locked", "lock")}
     report["risk"]["skipped"] = rs.get("skipped", [])
-    # 4. findings
+    # 4. findings + the closed 1m bars this cycle used, for the local dashboard (state/bars/, git-ignored)
+    save_bars(st.root, bars)
     srcs = sorted({m.get("source", "") for (_, iv), (_, m) in bars.cache.items() if iv == "1m"})
     text = write_setups_md.build(sorted(st.setups(), key=lambda s: s.get("alert_time", "")), [], now, "; ".join(srcs))
     os.makedirs(os.path.join(root, "findings"), exist_ok=True)
