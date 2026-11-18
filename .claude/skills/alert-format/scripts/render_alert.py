@@ -26,6 +26,11 @@ def label_text(s: dict) -> str:
     return "COUNTER-TREND" if lab == "COUNTER-TREND" else lab
 
 
+def _join(items) -> str:
+    """'; '-joined list without doubled punctuation (an item ending in '.' used to render as '.;')."""
+    return "; ".join(t for t in (str(x).strip().rstrip(".;").rstrip() for x in items) if t)
+
+
 def data_line(s: dict) -> str:
     src = s.get("data_source") or "UNKNOWN SOURCE - do not send"
     if s.get("fallback"):
@@ -69,11 +74,11 @@ def render(s: dict, event: str, time: str | None = None, price: float | None = N
         L.append(f"Stop: {_fmt(s['stop'], d)} (raid extreme {_fmt(ext, d)} + spread {s.get('spread')} + 1m wick {s.get('wick')}) | Risk: {s.get('risk_pts')} pts")
         L.append(f"Targets: {targets_text(s, d)}")
         L.append(f"Size: {s.get('size_formula', 'equity x risk% / risk pts')} ({s.get('risk_pct', 0.5)}% {s.get('risk_mode', 'standalone')})")
-        L.append("Confluence: " + ("; ".join(s.get("confluence", [])) or "none noted"))
+        L.append("Confluence: " + (_join(s.get("confluence", [])) or "none noted"))
         cav = list(s.get("caveats", []))
         cav.append(f"skip if TP1 {_fmt(tp1, d)} trades before the fill; drop if {_fmt(ext, d)} breaks first"
                    + (f"; cancel if unfilled by {s['killzone_end_sast']} SAST" if s.get("killzone_end_sast") else ""))
-        L.append("Caveats: " + "; ".join(cav))
+        L.append("Caveats: " + _join(cav))
     else:
         t = f" at {time} SAST" if time else ""
         px = _fmt(price, d) if price is not None else None

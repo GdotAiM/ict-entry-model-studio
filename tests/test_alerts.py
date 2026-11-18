@@ -64,3 +64,13 @@ def test_banned_language_and_missing_source():
     bad = "I placed the order. Guaranteed win. Charter stage: x Data: UNKNOWN SOURCE Analysis only, not financial advice"
     errs = ca.check(bad, "FILLED")
     assert any("banned" in e for e in errs) and any("no data source" in e for e in errs)
+
+
+def test_caveats_never_render_dot_semicolon(example_setup):
+    s = validated(example_setup)
+    s["caveats"] = ["2 correlated trades in US-indices-short: new one 0.25% (group 0.75% of max 1%).", "stop buffer is a DEFAULT"]
+    s["confluence"] = ["DXY bull confirms (inverse).", "draw on liquidity PDL"]
+    txt = ra.render(s, "NEW")
+    assert ".;" not in txt and "max 1%); stop buffer is a DEFAULT; skip if TP1" in txt
+    assert "Confluence: DXY bull confirms (inverse); draw on liquidity PDL" in txt
+    assert ca.check(txt, "NEW", s) == []
