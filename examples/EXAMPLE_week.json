@@ -9,14 +9,14 @@
      "entry": 1.32055, "stop": 1.32131, "targets": [1.31895, 1.31702], "events": [["FILLED", "09:33", 0], ["TP1", "10:05", 2.1], ["BE", "10:44", 0.0]], "status": "closed_be"},
     {"id": "N8", "date": "2026-01-13", "instrument": "US100", "direction": "long", "kz": "NY AM", "model": "ICT 2022 model", "label": "with-bias",
      "entry": 20018.0, "stop": 19996.0, "targets": [20066.0, 20102.0], "events": [["FILLED", "14:37", 0], ["STOP", "15:02", -1.0]], "status": "closed_stop"},
-    {"id": "X2", "date": "2026-01-14", "instrument": "XAUUSD", "direction": "long", "kz": "London Open", "model": "Unicorn", "label": "with-bias",
-     "entry": 4005.8, "stop": 4001.9, "targets": [4014.4], "events": [["FILLED", "09:52", 0], ["TP1", "10:40", 2.2]], "status": "closed_tp1"},
+    {"id": "S1", "date": "2026-01-14", "instrument": "US500", "direction": "long", "kz": "London Open", "model": "Unicorn", "label": "COUNTER-TREND",
+     "entry": 7002.5, "stop": 6998.8, "targets": [7010.6], "events": [["FILLED", "09:52", 0], ["TP1", "10:40", 2.2]], "status": "closed_tp1"},
     {"id": "E4", "date": "2026-01-14", "instrument": "EURUSD", "direction": "long", "kz": "London Open", "model": "Core", "label": "COUNTER-TREND",
      "entry": 1.15610, "stop": 1.15560, "targets": [1.15720, 1.15790], "events": [["FILLED", "10:12", 0], ["STOP", "10:49", -1.0]], "status": "closed_stop"},
     {"id": "G3", "date": "2026-01-14", "instrument": "GBPUSD", "direction": "short", "kz": "NY AM", "model": "Core", "label": "with-bias",
      "entry": 1.31977, "stop": 1.32040, "targets": [1.31840, 1.31790], "events": [["FILLED", "14:18", 0], ["STOP", "14:41", -1.12]], "status": "closed_stop"},
-    {"id": "X3", "date": "2026-01-14", "instrument": "XAUUSD", "direction": "short", "kz": "NY AM", "model": "Core", "label": "with-bias",
-     "entry": 4012.3, "stop": 4016.0, "targets": [4004.1, 4000.2], "events": [["VOID", "14:55", 0.0]], "status": "void"},
+    {"id": "S2", "date": "2026-01-14", "instrument": "US500", "direction": "short", "kz": "NY AM", "model": "Core", "label": "with-bias",
+     "entry": 7011.4, "stop": 7014.9, "targets": [7003.8, 7000.1], "events": [["VOID", "14:55", 0.0]], "status": "void"},
     {"id": "E5", "date": "2026-01-15", "instrument": "EURUSD", "direction": "short", "kz": "London Open", "model": "Core", "label": "with-bias",
      "entry": 1.15842, "stop": 1.15895, "targets": [1.15730, 1.15660], "events": [["FILLED", "09:04", 0], ["STOP", "09:12", -1.0]], "status": "closed_stop"}
   ]

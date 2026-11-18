@@ -106,3 +106,24 @@ def test_watch_saves_closed_bars_for_the_dashboard(tmp_path):
     rows, meta = db.load_bars(str(tmp_path), "US100")
     assert rows and rows[-1]["time"] == "2026-01-15T09:26:00+02:00"              # closed bars only
     assert meta["saved_at"].startswith("2026-01-15T09:27")
+
+
+def test_watchlist_is_the_v3_five_with_a_bias_each(example):
+    root, _ = example
+    html = read(root, "index.html")
+    wl = html[html.index("Watchlist &amp; bias"):html.index("Switched off (kept in config)")]
+    order = [wl.index(f"<b>{i}</b>") for i in ("US100", "US500", "EURUSD", "GBPUSD", "DXY")]
+    assert order == sorted(order) and "no bias read yet" not in wl         # every row has a bias, DXY included
+    assert "<b>XAUUSD</b>" not in html and "Switched off (kept in config): XAUUSD" in html
+    assert "context only: no setups, no alerts" in wl and wl.count("DXY bull confirms (inverse)") == 2
+    assert "CAPITALCOM:US500" in wl and "TVC:DXY" in wl and "group US-indices" in wl
+
+
+def test_example_us500_setup_is_correlated_with_us100(example):
+    root, _ = example
+    s = json.load(open(os.path.join(root, "state", "setups", "S3.json")))
+    n = json.load(open(os.path.join(root, "state", "setups", "N9.json")))
+    assert s["instrument"] == "US500" and s["symbol"] == "CAPITALCOM:US500" and n["risk_pct"] == 0.5
+    assert s["risk_mode"] == "correlated" and s["risk_pct"] == 0.25 and "US-indices-short" in s["caveats"][0]
+    assert "US-indices-short group" in read(root, "index.html")
+    assert not any(f.startswith("DXY") for f in os.listdir(os.path.join(root, "state", "setups")))

@@ -181,14 +181,24 @@ def page(title: str, active: str, body: str, ctx: dict, refresh: int | None = No
     now = ctx["now"]
     nav = "".join(f'<a href="{h}" class="{"on" if k == active else ""}">{n}</a>' for k, h, n in
                   (("dash", "index.html", "Dashboard"), ("life", "lifecycle.html", "Lifecycle"), ("recap", "recap.html", "Weekly recap")))
-    src = ctx["sources"][-1] if ctx["sources"] else "no bar data yet"
+    srcs = ctx["sources"]
+    if not srcs:
+        src = "no bar data yet"
+    elif len(srcs) == 1:
+        src = srcs[0]
+    else:   # several feeds (one per instrument): name the shared part, full list on hover
+        common = os.path.commonprefix(srcs)
+        if any(len(x) > len(common) and x[len(common)] != " " for x in srcs):
+            common = common.rsplit(" ", 1)[0]   # don't cut a word in half
+        common = common.strip()
+        src = f"{common or srcs[0]} · {len(srcs)} sources"
     ex = '<span class="ex" title="fabricated, not market data">EXAMPLE DATA</span>' if ctx["example"] else ""
     meta = f'<meta http-equiv="refresh" content="{refresh}">' if refresh else ""
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">{meta}<title>{E(title)}</title>
 <meta name="viewport" content="width=device-width,initial-scale=1"><style>{palette.css()}{CSS}</style></head><body>
 <div class="top"><div class="logo"></div><h1>ICT Entry Model Studio</h1>
 <span class="clock mono">{now:%H:%M}</span><span class="mut mono">SAST · {now.astimezone(NY):%H:%M} NY · {now:%a %d %b}</span>
-<nav class="nav">{nav}</nav><span class="chip">{E(src[:44])}</span><span class="chip">Alerts only · no orders</span>{ex}</div>
+<nav class="nav">{nav}</nav><span class="chip" title="{E("; ".join(srcs))}">{E(src[:48])}</span><span class="chip">Alerts only · no orders</span>{ex}</div>
 <div class="wrap">{body}<div class="foot">Analysis only, not financial advice. Nothing here places or manages orders. Generated {now:%Y-%m-%d %H:%M} SAST from the local state.</div></div></body></html>"""
 
 
@@ -277,12 +287,20 @@ def kz_timeline(ctx: dict) -> str:
             f'<div style="position:relative;height:118px;margin:12px 30px 8px">{"".join(blocks)}{ticks}</div></div>')
 
 
+def dxy_line(reason: str) -> str:
+    """'DXY bull confirms (inverse)' / 'DXY ... DISAGREES ...' from the bias read, as a small coloured line."""
+    col = T["down"] if "DISAGREES" in reason else T["up"]
+    return f'<div style="font-size:11px;color:{col}">{E(reason)}</div>'
+
+
 def watchlist(ctx: dict) -> str:
     rows = []
-    for inst, spec in ctx["cfg"]["instruments"].items():
+    cfg = ctx["cfg"]
+    for inst in emconfig.watchlist(cfg):                         # switched-off instruments (XAUUSD) are not listed
+        spec = cfg["instruments"][inst]
         b = ctx["bias"].get(inst)
         bars = ctx["bars"].get(inst)
-        last = bars[0][-1]["close"] if bars else None
+        last = bars[0][-1]["close"] if bars else (b or {}).get("last")
         d = spec.get("decimals", 2)
         if b:
             k = (b.get("bias") or "neutral").lower()
@@ -294,13 +312,22 @@ def watchlist(ctx: dict) -> str:
                     f'<span class="mut">conf {b.get("confidence")}</span>'
                     + (f'<div class="meter" style="height:5px"><b style="width:{pos}%;background:{T["tx2"]}"></b></div>'
                        f'<div class="kv mut" style="font-size:10.5px"><span>Discount</span><span>{pos}% of 20d range</span><span>Premium</span></div>' if pos is not None else "")
-                    + (f'<div class="mut" style="font-size:11px">Draw: {E(str(draw.get("name", "")))} {fmt(draw.get("level"), d)}</div>' if draw else ""))
+                    + (f'<div class="mut" style="font-size:11px">Draw: {E(str(draw.get("name", "")))} {fmt(draw.get("level"), d)}</div>' if draw else "")
+                    + "".join(dxy_line(r) for r in (b.get("reasoning") or []) if r.startswith("DXY ")))
         else:
             line = '<span class="mut" style="font-size:11.5px">no bias read yet (no daily data this run)</span>'
-        tag = ' <span class="mut" style="font-size:10.5px">confluence only</span>' if spec.get("confluence_only") else ""
+        if spec.get("confluence_only"):
+            tag = ' · <span style="font-size:10.5px">context only: no setups, no alerts; SMT input for EURUSD/GBPUSD (inverse)</span>'
+        elif spec.get("corr_group"):
+            tag = f' · <span style="font-size:10.5px">group {E(spec["corr_group"])}</span>'
+        else:
+            tag = ""
         rows.append(f'<div style="padding:11px 14px;border-bottom:1px solid var(--line)"><div class="kv"><b>{E(inst)}</b>'
                     f'<span class="mono">{fmt(last, d) if last is not None else "<span class=mut>–</span>"}</span></div>'
                     f'<div class="mut mono" style="font-size:10.5px;margin-bottom:5px">{E(spec.get("tv", ""))}{tag}</div>{line}</div>')
+    off = [i for i in cfg["instruments"] if i not in emconfig.watchlist(cfg)]
+    if off:
+        rows.append(f'<div class="mut" style="padding:9px 14px;font-size:11px">Switched off (kept in config): {E(", ".join(off))}</div>')
     when = f"bias file {ctx['bias_date']}" if ctx["bias_date"] else "no bias file"
     return f'<div class="card"><h2>Watchlist &amp; bias<span class="r">{when}</span></h2>{"".join(rows)}</div>'
 
@@ -774,10 +801,11 @@ def seed_example(root: str, until: str = "09:40") -> datetime:
     os.makedirs(os.path.join(root, "state", "setups"), exist_ok=True)
     bars = os.path.join(root, "bars")
     os.makedirs(bars, exist_ok=True)
-    for iv in ("1m", "1d"):
-        shutil.copy(os.path.join(ROOT, "examples", f"EXAMPLE_bars_US100_{iv}.csv"), os.path.join(bars, f"US100_{iv}.csv"))
-        with open(os.path.join(bars, f"US100_{iv}.csv.meta.json"), "w") as f:
-            json.dump({"source": "EXAMPLE DATA (fabricated) US100", "fallback": False}, f)
+    for src in sorted(glob.glob(os.path.join(ROOT, "examples", "EXAMPLE_bars_*_*.csv"))):
+        name = os.path.basename(src)[len("EXAMPLE_bars_"):]            # e.g. US500_1m.csv
+        shutil.copy(src, os.path.join(bars, name))
+        with open(os.path.join(bars, f"{name}.meta.json"), "w") as f:
+            json.dump({"source": f"EXAMPLE DATA (fabricated) {name.split('_')[0]}", "fallback": False}, f)
     log = os.path.join(root, "state", "alerts_log.csv")
     fx = _read_json(os.path.join(ROOT, "examples", "EXAMPLE_week.json"))
     cfg = emconfig.load_config()
@@ -816,7 +844,7 @@ def seed_example(root: str, until: str = "09:40") -> datetime:
     last = None
     for hhmm in ("09:20", "09:27", "09:32", until):
         now = datetime.fromisoformat(f"2026-01-15T{hhmm}:00+02:00")
-        rep = watch.run_cycle(now, root=root, bars_dir=bars, dry_run=True, instruments=["US100"])
+        rep = watch.run_cycle(now, root=root, bars_dir=bars, dry_run=True, instruments=["US100", "US500"])
         for x in rep["outbox"]["dry_run"]:
             s = _read_json(os.path.join(root, "state", "setups", f"{x['id']}.json"))
             if not s:
@@ -832,6 +860,13 @@ def seed_example(root: str, until: str = "09:40") -> datetime:
                                 "target": " / ".join(str(t["price"]) for t in s["targets"]), "r": "" if ev.get("r") is None else ev["r"],
                                 "chart": x.get("chart") or ""})
         last = now
+    # bias for the rest of the watchlist (EURUSD, GBPUSD with the DXY inverse check, DXY itself) from the fabricated daily bars
+    st, bx = watch.State(root), watch.Bars(bars, last, cfg)
+    for inst in emconfig.watchlist(cfg):
+        try:
+            watch.bias_for(st, bx, inst, last.strftime("%Y-%m-%d"), bx.get(inst, "1d")[0][-1]["close"])
+        except (LookupError, ValueError):
+            continue
     return last
 
 

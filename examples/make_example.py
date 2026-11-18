@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """Generates EXAMPLE (FABRICATED) 1m bars for tests and the README walkthrough.
 These prices are invented to illustrate the sequence. They are NOT market data and must never be used in an alert.
-    python3 examples/make_example.py  ->  examples/EXAMPLE_bars_US100_1m.csv
+    python3 examples/make_example.py  ->  examples/EXAMPLE_bars_US100_1m.csv (+ _1d), and for the v3 watchlist:
+        EXAMPLE_bars_US500_{1m,1d}.csv   the US100 example scaled x0.35 (same shape, ~7000 level)
+        EXAMPLE_bars_{EURUSD,GBPUSD,DXY}_1d.csv   daily staircases so every watchlist row has a bias:
+        EURUSD and GBPUSD bearish, DXY bullish (the inverse that confirms them).
 """
 import csv, os
 from datetime import datetime, timedelta
@@ -58,6 +61,39 @@ def daily_rows():
     return rows
 
 
+US500_SCALE = 0.35   # EXAMPLE only: US500 bars are the US100 example times 0.35, rounded to 0.1
+
+
+def _days():
+    from datetime import date
+    days, d = [], date(2025, 10, 1)
+    while d <= date(2026, 1, 14):
+        if d.weekday() < 5:
+            days.append(d)
+        d += timedelta(days=1)
+    return days
+
+
+def staircase(start: float, end: float, swing: float, decimals: int):
+    """EXAMPLE (FABRICATED) daily staircase from `start` to `end` with +-swing steps, trading-date labelled."""
+    days = _days()
+    n, rows = len(days), []
+    for i, day in enumerate(days):
+        mid = start + (end - start) * i / (n - 1) + (swing if i % 4 in (1, 2) else -swing)
+        drift = (end - start) / n
+        o, c = mid - drift * 2, mid + drift * 2
+        rows.append([day.isoformat(), round(o, decimals), round(max(o, c) + 1.5 * swing, decimals),
+                     round(min(o, c) - 1.5 * swing, decimals), round(c, decimals)])
+    return rows
+
+
+def _write(path, rows):
+    with open(path, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["time", "open", "high", "low", "close"])
+        w.writerows(rows)
+
+
 def main(out=os.path.join(os.path.dirname(__file__), "EXAMPLE_bars_US100_1m.csv")):
     with open(os.path.join(os.path.dirname(out), "EXAMPLE_bars_US100_1d.csv"), "w", newline="") as f:
         w = csv.writer(f)
@@ -68,6 +104,14 @@ def main(out=os.path.join(os.path.dirname(__file__), "EXAMPLE_bars_US100_1m.csv"
         w.writerow(["time", "open", "high", "low", "close"])
         for i, (o, h, l, c) in enumerate(SEQ):
             w.writerow([(START + timedelta(minutes=i)).isoformat(), o, h, l, c])
+    here = os.path.dirname(out)
+    k = US500_SCALE
+    _write(os.path.join(here, "EXAMPLE_bars_US500_1m.csv"),
+           [[(START + timedelta(minutes=i)).isoformat(), *(round(x * k, 1) for x in bar)] for i, bar in enumerate(SEQ)])
+    _write(os.path.join(here, "EXAMPLE_bars_US500_1d.csv"), [[r[0], *(round(x * k, 1) for x in r[1:])] for r in daily_rows()])
+    _write(os.path.join(here, "EXAMPLE_bars_EURUSD_1d.csv"), staircase(1.17600, 1.15950, 0.00180, 5))
+    _write(os.path.join(here, "EXAMPLE_bars_GBPUSD_1d.csv"), staircase(1.33600, 1.32150, 0.00220, 5))
+    _write(os.path.join(here, "EXAMPLE_bars_DXY_1d.csv"), staircase(98.200, 99.450, 0.150, 3))
     return out
 
 
