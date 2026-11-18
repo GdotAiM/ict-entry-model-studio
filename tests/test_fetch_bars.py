@@ -16,7 +16,7 @@ def test_tradingview_primary():
 
 
 def test_resolve_by_tv_symbol():
-    rows, meta = fb.fetch("OANDA:XAUUSD", "5m", 10, tv_fetch=lambda *a: ROWS, yf_fetch=boom)
+    rows, meta = fb.fetch("CAPITALCOM:GOLD", "5m", 10, tv_fetch=lambda *a: ROWS, yf_fetch=boom)
     assert meta["instrument"] == "XAUUSD"
 
 
@@ -199,3 +199,11 @@ def test_monday_bars_after_the_weekend_reopen_are_accepted(tmp_path):
     dx = '[{"time":1794780000,"open":1,"high":2,"low":0.5,"close":1.5},{"time":1794873600,"open":1,"high":2,"low":0.5,"close":1.5}]'
     rows = fb._tvapi_fetch("TVC:DXY", "1d", 2, run=_runner(dx), bridge_dir=_bridge(tmp_path))
     assert [r["time"] for r in fb.label_daily(rows)] == ["2026-11-16", "2026-11-17"]
+
+
+def test_gold_daily_bars_open_at_the_18_ny_reopen(tmp_path):
+    # CAPITALCOM:GOLD daily bars open 01:00 SAST every day (18:00 NY, seen 18 Nov 2026) -> default hours accept them
+    assert fb.daily_open_hours("CAPITALCOM:GOLD") == (23, 0, 1)
+    g = '[{"time":1794956400,"open":3848.4,"high":3860,"low":3760,"close":3770}]'          # Wed 18 Nov 2026 01:00 SAST
+    rows = fb._tvapi_fetch("CAPITALCOM:GOLD", "1d", 1, run=_runner(g), bridge_dir=_bridge(tmp_path))
+    assert fb.label_daily(rows)[0]["time"] == "2026-11-18"

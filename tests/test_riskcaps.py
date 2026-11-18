@@ -19,7 +19,7 @@ def test_group_cap_counts_real_risk_reported_bug():
     """The reported case: 0.5% standalone + 3 x 0.25% = 1.25% used to pass as 'inside the 1% cap'."""
     opens = []
     sizes = []
-    for inst in ("EURUSD", "GBPUSD", "XAUUSD", "EURUSD"):
+    for inst in ("EURUSD", "GBPUSD", "EURUSD", "GBPUSD"):
         r = ps.risk_pct_for(inst, "long", opens)
         if r["allowed"]:
             opens.append((inst, "long", r["risk_pct"])); sizes.append(r["risk_pct"])
@@ -38,7 +38,7 @@ def test_group_cap_uses_recorded_risk_and_reports_totals():
 
 def test_cli_open_with_risk(capsys):
     assert ps.main(["--risk-pts", "10", "--instrument", "EURUSD", "--direction", "long",
-                    "--open", "GBPUSD:long:0.5", "--open", "XAUUSD:long:0.25", "--open", "EURUSD:long:0.25"]) == 1
+                    "--open", "GBPUSD:long:0.5", "--open", "EURUSD:long:0.25", "--open", "GBPUSD:long:0.25"]) == 1
     assert ps.main(["--risk-pts", "10", "--instrument", "EURUSD", "--direction", "long", "--open", "GBPUSD:long:0.5"]) == 0
 
 

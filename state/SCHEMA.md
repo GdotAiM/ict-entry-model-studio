@@ -5,10 +5,10 @@ Written by `setup-validator`, updated by `setup-lifecycle-tracker`. Example (FAB
 
 | Field | Type | Notes |
 |---|---|---|
-| id | string | `N#` US100, `S#` US500, `E#` EURUSD, `G#` GBPUSD (`X#` XAUUSD if switched on); never reused |
+| id | string | `N#` US100, `S#` US500, `E#` EURUSD, `G#` GBPUSD, `X#` XAUUSD; never reused |
 | date | `YYYY-MM-DD` | SAST date of the alert |
 | instrument / symbol | string | `US100` / `CAPITALCOM:US100` |
-| decimals | int | display precision (US100 1, US500 1, FX 5, DXY 3) |
+| decimals | int | display precision (US100 1, US500 1, FX 5, XAU 2, DXY 3) |
 | timeframe | string | entry timeframe, normally `1m` |
 | direction | `long`\|`short` | |
 | killzone, killzone_end, killzone_end_sast | string | from `killzone.py`; `killzone_end` is ISO and drives CANCELLED |
@@ -26,13 +26,13 @@ Written by `setup-validator`, updated by `setup-lifecycle-tracker`. Example (FAB
 | runner | object? | `{price, label}` informational, no R requirement |
 | risk_pct, risk_mode, size_formula | | from `position_size.py` |
 | confluence, caveats | string[] | DXY / SMT / team-file notes; stale files named here |
-| dxy_smt | object or null | EURUSD/GBPUSD only: `{"smt": bool, "text": ...}` from `watch.dxy_smt` (DXY made / did not make the mirror high/low at the sweep). Context, never a gate |
+| dxy_smt | object or null | EURUSD/GBPUSD/XAUUSD only: `{"smt": bool, "text": ...}` from `watch.dxy_smt` (DXY made / did not make the mirror high/low at the sweep). Context, never a gate |
 | data_source, fallback | string, bool | copied from the bar file's `.meta.json` |
 | validation | object | `{verdict, errors, notes}` |
 | status | string | `pending, filled, tp1, closed_tp1, closed_tp2, closed_stop, closed_be, void, invalid, cancelled, locked` (`locked` = found while a risk cap was hit; never alerted, terminal) |
 | lock | object | only on `locked` setups: `{kind: daily|drawdown, id, reason, until}` from `lib/riskstate.py` |
 | example | bool | true only for EXAMPLE (fabricated) records built by `scripts/dashboard.py --example` |
-| move_to_be_after_tp1 | bool | set only when Hilda says she moved her stop to breakeven |
+| move_to_be_after_tp1 | bool | set only when Ntloso says the stop was moved to breakeven |
 | alert_time, last_checked | ISO | lifecycle only replays bars after `last_checked` |
 | events | list | `{event, time, price, r, note}` appended by `lifecycle.py --write` |
 | chart | string | latest chart path |

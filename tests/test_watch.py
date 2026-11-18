@@ -222,7 +222,7 @@ def test_dxy_smt_for_usd_quote_pairs():
     assert watch.dxy_smt("short", "2026-01-15T09:21:00+02:00", held[:3], since) is None   # not enough history: no call
 
 
-def test_scan_list_skips_dxy_and_switched_off_xauusd(env, tg):
+def test_scan_list_skips_dxy_and_includes_gold(env, tg):
     seen = []
     orig = watch.scan_instrument
     try:
@@ -231,4 +231,4 @@ def test_scan_list_skips_dxy_and_switched_off_xauusd(env, tg):
                         dry_run=True, env=TG, charts=False)
     finally:
         watch.scan_instrument = orig
-    assert seen == ["US100", "US500", "EURUSD", "GBPUSD"]
+    assert seen == ["US100", "US500", "EURUSD", "GBPUSD", "XAUUSD"]

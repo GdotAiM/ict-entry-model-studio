@@ -7,7 +7,9 @@ Risk rules:
     counted on the risk each open trade really carries (a 0.5% standalone + 0.25% + 0.25% = 1.0% = group full).
     Groups (one 1% cap each):
       US-indices-long / US-indices-short: US100 and US500 in the same direction (they move together, ~0.9+ correlation).
-      USD-short (EURUSD long, GBPUSD long[, XAUUSD long]) / USD-long (EURUSD short, GBPUSD short[, XAUUSD short]).
+      USD-short (EURUSD long, GBPUSD long) / USD-long (EURUSD short, GBPUSD short).
+      gold-long / gold-short: XAUUSD (CAPITALCOM:GOLD) is its own group. Gold also tends to move against the dollar, but
+      far more loosely than EUR/GBP and with its own drivers, so it gets its own 1% cap instead of sharing the USD one.
     DXY is context only and never traded, so it carries no exposure of its own. "DXY-inverse exposure" is already
     what the USD groups count: EURUSD long + GBPUSD long are both short the dollar (= short DXY), so they share one cap.
     Indices are NOT put in a USD group: the index/dollar link flips sign by regime and is too loose for a hard cap;
@@ -22,7 +24,8 @@ from __future__ import annotations
 import argparse, json, sys
 
 STANDALONE, CORR_EACH, CORR_MAX, GROUP_MAX = 0.5, 0.25, 4, 1.0
-USD_QUOTE = {"EURUSD", "GBPUSD", "XAUUSD"}  # long these = short USD (XAUUSD is switched off in config, kept here)
+USD_QUOTE = {"EURUSD", "GBPUSD"}           # long these = short USD
+GOLD = {"XAUUSD", "GOLD"}                   # CAPITALCOM:GOLD -> "GOLD"; own group
 US_INDICES = {"US100", "US500", "NAS100"}   # NAS100 = the old OANDA name, so older journal entries still group
 
 
@@ -30,6 +33,8 @@ def correlation_group(instrument: str, direction: str) -> str:
     instrument = instrument.upper().split(":")[-1]
     if instrument in US_INDICES:
         return f"US-indices-{direction}"
+    if instrument in GOLD:
+        return f"gold-{direction}"
     if instrument in USD_QUOTE:
         return "USD-short" if direction == "long" else "USD-long"
     return f"{instrument}-{direction}"
@@ -66,7 +71,7 @@ def risk_pct_for(instrument: str, direction: str, open_trades: list[tuple]) -> d
         return {"group": g, "risk_pct": 0.0, "mode": "correlated", "allowed": False, "group_used_pct": used, "group_after_pct": used,
                 "note": f"group {g} already has {len(same)} trade(s) carrying {used:g}%: {why} - no new trade"}
     return {"group": g, "risk_pct": CORR_EACH, "mode": "correlated", "allowed": True, "group_used_pct": used, "group_after_pct": after,
-            "note": f"{n} correlated trades in {g}: new one {CORR_EACH:g}% (group {after:g}% of max {GROUP_MAX:g}%)."}
+            "note": f"{n} correlated trades in {g}: new one {CORR_EACH:g}% (group {after:g}% of max {GROUP_MAX:g}%)"}
 
 
 def size(risk_pct: float, risk_pts: float, equity: float | None = None, value_per_point: float = 1.0) -> dict:

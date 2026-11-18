@@ -10,11 +10,11 @@ from these files and never quote these numbers as real levels.
 | `EXAMPLE_bars_US100_1m.csv` | 42 hand-built 1m bars: range, buy-side raid of 20030, displacement MSS through 20010, FVG, OTE retrace, sell-off |
 | `EXAMPLE_bars_US100_1d.csv` | Fabricated daily bars (bear staircase; PWL 19930.0, PDL 19960.0) for the bias and the offline watch replay |
 | `EXAMPLE_bars_US500_1m.csv`, `EXAMPLE_bars_US500_1d.csv` | The US100 example scaled x0.35 (~7000), so the replay also finds a US500 short that shares the US-indices group cap |
-| `EXAMPLE_bars_EURUSD_1d.csv`, `EXAMPLE_bars_GBPUSD_1d.csv`, `EXAMPLE_bars_DXY_1d.csv` | Fabricated daily staircases so every watchlist row has a bias: EURUSD and GBPUSD bearish, DXY bullish (the inverse that confirms them) |
+| `EXAMPLE_bars_EURUSD_1d.csv`, `EXAMPLE_bars_GBPUSD_1d.csv`, `EXAMPLE_bars_XAUUSD_1d.csv`, `EXAMPLE_bars_DXY_1d.csv` | Fabricated daily staircases so every watchlist row has a bias: EURUSD, GBPUSD and XAUUSD bearish, DXY bullish (the inverse that confirms them) |
 | `EXAMPLE_setup_EX1.json` | The setup record (state/SCHEMA.md) *before* validation |
 | `EXAMPLE_alert_EX1_NEW.md`, `EXAMPLE_alert_EX1_TP1.md` | Alerts rendered by `render_alert.py` after `validate_setup.py --write` |
 | `EXAMPLE_chart_EX1.png` | Chart rendered by `render_chart.py` |
-| `EXAMPLE_week.json` | A made-up week (Mon 12 – Thu 15 Jan 2026) of closed setups on US100, US500, EURUSD and GBPUSD for the dashboard, risk meters and weekly recap (`scripts/dashboard.py --example`) |
+| `EXAMPLE_week.json` | A made-up week (Mon 12 – Thu 15 Jan 2026) of closed setups on US100, US500, EURUSD, GBPUSD and XAUUSD for the dashboard, risk meters and weekly recap (`scripts/dashboard.py --example`) |
 
 Walkthrough (writes only to /tmp):
 ```bash

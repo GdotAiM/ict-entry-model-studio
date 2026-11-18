@@ -296,7 +296,7 @@ def dxy_line(reason: str) -> str:
 def watchlist(ctx: dict) -> str:
     rows = []
     cfg = ctx["cfg"]
-    for inst in emconfig.watchlist(cfg):                         # switched-off instruments (XAUUSD) are not listed
+    for inst in emconfig.watchlist(cfg):                         # switched-off instruments are not listed
         spec = cfg["instruments"][inst]
         b = ctx["bias"].get(inst)
         bars = ctx["bars"].get(inst)
@@ -317,7 +317,7 @@ def watchlist(ctx: dict) -> str:
         else:
             line = '<span class="mut" style="font-size:11.5px">no bias read yet (no daily data this run)</span>'
         if spec.get("confluence_only"):
-            tag = ' · <span style="font-size:10.5px">context only: no setups, no alerts; SMT input for EURUSD/GBPUSD (inverse)</span>'
+            tag = ' · <span style="font-size:10.5px">context only: no setups, no alerts; SMT input for EURUSD/GBPUSD/XAUUSD (inverse)</span>'
         elif spec.get("corr_group"):
             tag = f' · <span style="font-size:10.5px">group {E(spec["corr_group"])}</span>'
         else:

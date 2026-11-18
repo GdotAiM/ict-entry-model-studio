@@ -3,8 +3,8 @@
 These prices are invented to illustrate the sequence. They are NOT market data and must never be used in an alert.
     python3 examples/make_example.py  ->  examples/EXAMPLE_bars_US100_1m.csv (+ _1d), and for the v3 watchlist:
         EXAMPLE_bars_US500_{1m,1d}.csv   the US100 example scaled x0.35 (same shape, ~7000 level)
-        EXAMPLE_bars_{EURUSD,GBPUSD,DXY}_1d.csv   daily staircases so every watchlist row has a bias:
-        EURUSD and GBPUSD bearish, DXY bullish (the inverse that confirms them).
+        EXAMPLE_bars_{EURUSD,GBPUSD,XAUUSD,DXY}_1d.csv   daily staircases so every watchlist row has a bias:
+        EURUSD, GBPUSD and XAUUSD bearish, DXY bullish (the inverse that confirms them).
 """
 import csv, os
 from datetime import datetime, timedelta
@@ -111,6 +111,7 @@ def main(out=os.path.join(os.path.dirname(__file__), "EXAMPLE_bars_US100_1m.csv"
     _write(os.path.join(here, "EXAMPLE_bars_US500_1d.csv"), [[r[0], *(round(x * k, 1) for x in r[1:])] for r in daily_rows()])
     _write(os.path.join(here, "EXAMPLE_bars_EURUSD_1d.csv"), staircase(1.17600, 1.15950, 0.00180, 5))
     _write(os.path.join(here, "EXAMPLE_bars_GBPUSD_1d.csv"), staircase(1.33600, 1.32150, 0.00220, 5))
+    _write(os.path.join(here, "EXAMPLE_bars_XAUUSD_1d.csv"), staircase(4125.00, 4008.00, 9.00, 2))
     _write(os.path.join(here, "EXAMPLE_bars_DXY_1d.csv"), staircase(98.200, 99.450, 0.150, 3))
     return out
 

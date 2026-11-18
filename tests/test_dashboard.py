@@ -108,14 +108,14 @@ def test_watch_saves_closed_bars_for_the_dashboard(tmp_path):
     assert meta["saved_at"].startswith("2026-01-15T09:27")
 
 
-def test_watchlist_is_the_v3_five_with_a_bias_each(example):
+def test_watchlist_has_all_six_with_a_bias_each(example):
     root, _ = example
     html = read(root, "index.html")
-    wl = html[html.index("Watchlist &amp; bias"):html.index("Switched off (kept in config)")]
-    order = [wl.index(f"<b>{i}</b>") for i in ("US100", "US500", "EURUSD", "GBPUSD", "DXY")]
+    wl = html[html.index("Watchlist &amp; bias"):html.index("<h2>Setups")]
+    order = [wl.index(f"<b>{i}</b>") for i in ("US100", "US500", "EURUSD", "GBPUSD", "XAUUSD", "DXY")]
     assert order == sorted(order) and "no bias read yet" not in wl         # every row has a bias, DXY included
-    assert "<b>XAUUSD</b>" not in html and "Switched off (kept in config): XAUUSD" in html
-    assert "context only: no setups, no alerts" in wl and wl.count("DXY bull confirms (inverse)") == 2
+    assert "Switched off" not in html and "CAPITALCOM:GOLD" in wl and "group gold" in wl
+    assert "context only: no setups, no alerts" in wl and wl.count("DXY bull confirms (inverse)") == 3
     assert "CAPITALCOM:US500" in wl and "TVC:DXY" in wl and "group US-indices" in wl
 
 

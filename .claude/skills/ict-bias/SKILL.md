@@ -14,7 +14,7 @@ Method (the full rules are in the script docstring):
 | Weighting | M x1, W x1.5, D x2 → score ±4.5. ≥1 = bias, ≥2.5 = "strong", else "mild" |
 | Location | 20-day dealing range %. Bull at >80% / bear at <20% = EXTENDED (−0.15 confidence, "don't chase"); bull from discount / bear from premium +0.05 |
 | Draw | nearest *untaken* PDH/PDL, PWH/PWL, PMH/PML, old daily swing highs/lows (60 days) on the bias side. None below/above = "open air" (new extremes) |
-| DXY | EUR/GBP vs DXY inverse: confirm +0.1, disagree −0.1 and a flag (indices: none; DXY's own bias is shown on the dashboard) |
+| DXY | EUR/GBP/XAU vs DXY inverse: confirm +0.1, disagree −0.1 and a flag (indices: none; DXY's own bias is shown on the dashboard) |
 | Output | `bias`, `label`, `confidence` (0–1, low/medium/high), `invalidation` ("bias wrong on a 1H close above/below X"), `reasoning[]` |
 
 This mirrors the team Bias Bot's file (M/W/D read, zone vs the 20d range, ranked draws, invalidation, DXY check, extended-market warnings).

@@ -13,7 +13,7 @@ def test_every_tradeable_instrument_has_a_default_buffer():
             assert "DEFAULT" in sb["status"] and sb["spread"] > 0 and sb["wick_1m"] > 0
     assert "DEFAULT" in cfg["_comment"] and "broker" in cfg["_comment"]
     assert emconfig.stop_buffer(cfg, "US100")["total"] == 9.0
-    assert emconfig.stop_buffer(cfg, "OANDA:XAUUSD")["total"] == 1.3
+    assert emconfig.stop_buffer(cfg, "CAPITALCOM:GOLD")["total"] == 1.3
 
 
 def test_local_override_merges(tmp_path):
@@ -46,10 +46,12 @@ def test_futures_proxy_instruments_block_fallback():
 
 def test_watchlist_is_us100_us500_eu_gu_dxy():
     cfg = emconfig.load_config(local=None)
-    assert emconfig.watchlist(cfg) == ["US100", "US500", "EURUSD", "GBPUSD", "DXY"]
-    assert emconfig.tradeable(cfg) == ["US100", "US500", "EURUSD", "GBPUSD"]          # DXY: no setups, no alerts
+    assert emconfig.watchlist(cfg) == ["US100", "US500", "EURUSD", "GBPUSD", "XAUUSD", "DXY"]
+    assert emconfig.tradeable(cfg) == ["US100", "US500", "EURUSD", "GBPUSD", "XAUUSD"]  # DXY: no setups, no alerts
     ins = cfg["instruments"]
-    assert ins["XAUUSD"]["enabled"] is False and ins["XAUUSD"]["tv"] == "OANDA:XAUUSD"   # kept, switched off
+    assert ins["XAUUSD"].get("enabled", True) is True and ins["XAUUSD"]["tv"] == "CAPITALCOM:GOLD"   # gold back on
+    assert ins["XAUUSD"]["block_on_fallback"] is True and ins["XAUUSD"]["dxy_relation"] == "inverse"
+    assert emconfig.corr_group(cfg, "XAUUSD") == "gold"
     assert "NAS100" not in ins
     assert [ins[i]["tv"] for i in ("US100", "US500", "EURUSD", "GBPUSD", "DXY")] == [
         "CAPITALCOM:US100", "CAPITALCOM:US500", "CAPITALCOM:EURUSD", "CAPITALCOM:GBPUSD", "TVC:DXY"]
@@ -57,13 +59,14 @@ def test_watchlist_is_us100_us500_eu_gu_dxy():
     assert emconfig.corr_group(cfg, "US500") == emconfig.corr_group(cfg, "US100") == "US-indices"
     assert emconfig.corr_group(cfg, "EURUSD") == emconfig.corr_group(cfg, "GBPUSD") == "USD"
     assert ins["EURUSD"]["dxy_relation"] == ins["GBPUSD"]["dxy_relation"] == "inverse"
-    for i in ("US100", "US500", "EURUSD", "GBPUSD"):
+    for i in ("US100", "US500", "EURUSD", "GBPUSD", "XAUUSD"):
         assert "PLACEHOLDER" in ins[i]["stop_buffer"]["status"]
     assert emconfig.stop_buffer(cfg, "US500")["total"] == 2.5
 
 
-def test_switching_xauusd_back_on_via_local(tmp_path):
+def test_switching_an_instrument_off_via_local(tmp_path):
     loc = tmp_path / "local.json"
-    loc.write_text(json.dumps({"instruments": {"XAUUSD": {"enabled": True}}}))
+    loc.write_text(json.dumps({"instruments": {"XAUUSD": {"enabled": False}}}))
     cfg = emconfig.load_config(os.path.join(ROOT, "config", "instruments.json"), str(loc))
-    assert "XAUUSD" in emconfig.tradeable(cfg)
+    assert "XAUUSD" not in emconfig.tradeable(cfg) and "XAUUSD" not in emconfig.watchlist(cfg)
+    assert "XAUUSD" in cfg["instruments"]                                              # still in config

@@ -52,9 +52,13 @@ def test_standalone_and_correlated_risk():
     # EUR short + GBP short = same USD-long group -> 0.25% each
     r = ps.risk_pct_for("EURUSD", "short", [("GBPUSD", "short")])
     assert r["mode"] == "correlated" and r["risk_pct"] == 0.25
-    # gold long is USD-short: not correlated with a EUR short
+    # gold is its own group: never stacked with EUR/GBP, whatever the direction
     assert ps.risk_pct_for("XAUUSD", "long", [("EURUSD", "short")])["risk_pct"] == 0.5
-    full = [("EURUSD", "long"), ("GBPUSD", "long"), ("XAUUSD", "long"), ("EURUSD", "long")]
+    assert ps.risk_pct_for("XAUUSD", "long", [("EURUSD", "long"), ("GBPUSD", "long")])["risk_pct"] == 0.5
+    assert ps.correlation_group("CAPITALCOM:GOLD", "short") == "gold-short"
+    r = ps.risk_pct_for("XAUUSD", "short", [("XAUUSD", "short", 0.5)])
+    assert r["group"] == "gold-short" and r["risk_pct"] == 0.25
+    full = [("EURUSD", "long"), ("GBPUSD", "long"), ("EURUSD", "long"), ("GBPUSD", "long")]
     assert ps.risk_pct_for("GBPUSD", "long", full)["allowed"] is False
     # Changed with the group-cap fix: three bare open trades are 0.5 + 0.25 + 0.25 = 1.0% already, so the group is full.
     # (This line used to expect 0.25%, i.e. a 1.25% group reported as inside the 1% cap - the bug.)

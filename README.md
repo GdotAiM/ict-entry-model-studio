@@ -1,6 +1,6 @@
 # ict-entry-model-studio
 
-A Claude Code project that watches **US100, US500, EURUSD and GBPUSD** (with **DXY** as context only) for **ICT entry setups**
+A Claude Code project that watches **US100, US500, EURUSD, GBPUSD and XAUUSD (gold)** (with **DXY** as context only) for **ICT entry setups**
 during the kill zones, and writes an alert for every valid setup and every status change: fill, TP1, TP2, stop, breakeven,
 void, invalid, cancelled. Each alert names the model and its Charter stage and comes with a marked-up chart.
 
@@ -33,7 +33,7 @@ flowchart LR
     ST --> AW[alert-writer]
     AW --> DD{alert_log.py check<br/>already delivered?}
     DD -- new --> GATE{check_alert.py}
-    GATE -- PASS --> NT[notify.py<br/>Telegram / email] --> OUT((Hilda: chart first, then text))
+    GATE -- PASS --> NT[notify.py<br/>Telegram / email] --> OUT((Ntloso: chart first, then text))
     OUT --> LOG[(state/alerts_log.csv)]
     LOG -.-> DD
     LOG --> TJ[trade-journal] --> J[(journal/)]
@@ -123,18 +123,20 @@ tests/                             pytest (no network)
 | US500 | `CAPITALCOM:US500` | setups + alerts (IDs S..) | 1.0 index pt | 0.5 spread + 2.0 wick = 2.5 pts | ES=F, **blocked** | US-indices-long / -short |
 | EURUSD | `CAPITALCOM:EURUSD` | setups + alerts (IDs E..) | pip 0.0001 | 0.8 + 1.2 pips | EURUSD=X, disclosed | USD-short (long) / USD-long (short) |
 | GBPUSD | `CAPITALCOM:GBPUSD` | setups + alerts (IDs G..) | pip 0.0001 | 1.0 + 1.5 pips | GBPUSD=X, disclosed | USD-short / USD-long |
-| DXY | `TVC:DXY` (ICE index) | context only: dashboard bias, inverse check + SMT note for EURUSD/GBPUSD | 0.01 | – | DX-Y.NYB | none (never traded) |
-| XAUUSD | `OANDA:XAUUSD` | **switched off** (`"enabled": false`), kept in config | 0.1 | 0.3 + 1.0 | GC=F, blocked | USD group if switched on |
+| XAUUSD | `CAPITALCOM:GOLD` | setups + alerts (IDs X..) | pip 0.1 (point 0.01) | 0.3 spread + 1.0 wick = 1.3 | GC=F, **blocked** | gold-long / gold-short (own group) |
+| DXY | `TVC:DXY` (ICE index) | context only: dashboard bias, inverse check + SMT note for EURUSD/GBPUSD/XAUUSD | 0.01 | – | DX-Y.NYB | none (never traded) |
 
 - Symbols were checked with a real 5-bar 1m and daily fetch through the Node bridge on 18 Nov 2026: all of the above returned data.
   Capital.com daily bars open at the 17:00 New York roll (00:00 SAST in November); TVC:DXY daily bars open 00:00 UTC (02:00 SAST),
-  which is allowed per instrument with `daily_open_sast_hours`. Monday bars open at the Sunday re-open (US100/US500 01:00 SAST, DXY 00:00 SAST in November); the date guard accepts those too. CAPITALCOM:DXY also works (a CFD); TVC:DXY is used because it is the index.
+  which is allowed per instrument with `daily_open_sast_hours`. Monday bars open at the Sunday re-open (US100/US500 01:00 SAST, DXY 00:00 SAST in November); the date guard accepts those too. Gold (`CAPITALCOM:GOLD`, checked the same way) opens its daily bars at 01:00 SAST (18:00 NY) every day; `CAPITALCOM:XAUUSD` returns the same prices. CAPITALCOM:DXY also works (a CFD); TVC:DXY is used because it is the index.
 - Stop buffers are **placeholders**, not your spreads. Put your Capital.com spread and a normal 1m wick in `config/instruments.local.json`.
 - Kill zones are unchanged: London Open and NY AM only, defined in New York time and converted to SAST per date (DST-correct).
 - Correlation: US100 and US500 in the same direction share one 1% group. EURUSD and GBPUSD in the same USD direction share another; that
   already is the "DXY-inverse" exposure (both long = short the dollar). Indices are not added to the USD group: the index/dollar
   correlation changes sign by regime and is too loose for a hard cap; the 2% daily and 5% drawdown caps cover a bad day across both.
-- To bring XAUUSD back: `{"instruments": {"XAUUSD": {"enabled": true}}}` in `config/instruments.local.json`.
+- Gold has its own 1% group. It also tends to move against the dollar, but much more loosely than EUR/GBP and with its own drivers,
+  so it is not stacked with them; it does get the DXY inverse bias check and the DXY SMT note.
+- To switch any instrument off without deleting it: `{"instruments": {"XAUUSD": {"enabled": false}}}` in `config/instruments.local.json`.
 
 ## Setup
 1. Install [Claude Code](https://docs.claude.com/en/docs/claude-code) and log in.
@@ -143,7 +145,7 @@ tests/                             pytest (no network)
 4. Live data: `pip install pandas matplotlib yfinance`, then a TradingView backend (neither needs a TradingView login; data may be delayed and can time out):
    - **TradingView-API** ([Mathieu2301/TradingView-API](https://github.com/Mathieu2301/TradingView-API), tried first): needs Node 20.19+. Run `cd tools/tradingview-bridge && npm install` once. The bridge (`bridge.mjs`) only calls `getCandles`, anonymously, and prints JSON. It is read-only like the rest of the project.
    - **tvDatafeed** (second): `pip install git+https://github.com/rongardF/tvdatafeed.git`.
-   - `TV_BACKEND=auto|node|tvdatafeed` in `.env` forces one. Either one counts as TradingView data; the bar metadata and alerts name the backend that answered. Only when both fail does the yfinance FALLBACK (or NO DATA for US100 / XAUUSD) apply.
+   - `TV_BACKEND=auto|node|tvdatafeed` in `.env` forces one. Either one counts as TradingView data; the bar metadata and alerts name the backend that answered. Only when both fail does the yfinance FALLBACK (or NO DATA for US100 / US500 / XAUUSD) apply.
    - Anonymous TradingView-API access is limited (the library reports about 7,000 one-minute bars), which is more than the 1,000 this project requests.
 5. Stop buffers: the `stop_buffer` values in `config/instruments.json` are **defaults pending your broker's spreads**. Put your real
    spread and normal 1m wick per instrument in `config/instruments.local.json` (git-ignored), for example
@@ -229,7 +231,7 @@ python3 scripts/notify.py --alert alerts/2026-11-12_N1_NEW.md --chart charts/us1
 |---|---|
 | ict-bias-reader | "Use ict-bias-reader for today." |
 | liquidity-mapper | "Use liquidity-mapper for US100 and US500, equal-high tolerance 3 points on US100, 1 point on US500." |
-| killzone-scanner | "Run killzone-scanner now for US100, US500, EURUSD and GBPUSD." |
+| killzone-scanner | "Run killzone-scanner now for US100, US500, EURUSD, GBPUSD and XAUUSD." |
 | setup-validator | "Use setup-validator on drafts/candidate_US100_1051.json. Bias is bull." |
 | setup-lifecycle-tracker | "Use setup-lifecycle-tracker on all open setups." |
 | chart-annotator | "Use chart-annotator for N6 TP1." |
@@ -260,7 +262,7 @@ A full offline walkthrough on fabricated data is in [examples/README.md](example
 - **Labels:** a setup against the daily bias is labelled COUNTER-TREND.
 - **Closed bars only:** a bar is used only once it has closed (a 09:31 bar is available from 09:32:00). The forming bar is never scanned or used for fills and stops.
 - **Lifecycle:** a setup is void if TP1 trades before the fill, invalid if the raid extreme breaks before the fill, and cancelled at the end of the kill zone if unfilled. Ambiguous bars count as a stop first. A gap through the stop fills at the bar's open.
-- **Data:** TradingView first. yfinance is a fallback only and is always disclosed. For US100 and US500 the fallback is *blocked* (the proxies are futures, NQ=F and ES=F, whose basis to the Capital.com CFD can exceed the stop buffer), so those instruments report NO DATA instead; set `"block_on_fallback": false` in `config/instruments.local.json` to allow a disclosed fallback. Prices are never invented.
+- **Data:** TradingView first. yfinance is a fallback only and is always disclosed. For US100, US500 and XAUUSD the fallback is *blocked* (the proxies are futures, NQ=F, ES=F and GC=F, whose basis to the Capital.com CFD can exceed the stop buffer), so those instruments report NO DATA instead; set `"block_on_fallback": false` in `config/instruments.local.json` to allow a disclosed fallback. Prices are never invented.
 
 ## License
-MIT. See [LICENSE](LICENSE). This project is not affiliated with ICT or TradingView.
+MIT. See [LICENSE](LICENSE) (original copyright notice kept). Maintained by Ntloso Ngubeni ([@GdotAiM](https://github.com/GdotAiM)). This project is not affiliated with ICT or TradingView.

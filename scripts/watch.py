@@ -63,7 +63,7 @@ class Bars:
         else:
             rows, meta = fetch_bars.fetch(inst, iv, self.n1m if iv == "1m" else 400, self.cfg)
         if meta.get("fallback") and self.cfg["instruments"][inst].get("block_on_fallback"):
-            # yfinance proxies for US100 / XAUUSD are futures (NQ=F, GC=F): their basis to the OANDA CFD can exceed the
+            # yfinance proxies for US100 / US500 / XAUUSD are futures (NQ=F, ES=F, GC=F): their basis to the CFD can exceed the
             # stop buffer, so levels, fills and stops computed on them are not trustworthy. Treated as NO DATA.
             err = LookupError(f"NO DATA for {inst} {iv}: TradingView failed and the yfinance fallback ({meta.get('source')}) "
                               f"is a futures proxy blocked for {inst} (block_on_fallback; set it to false in "
@@ -173,7 +173,7 @@ def context_bias(st: State, bars: Bars, today: str) -> dict:
 
 
 def dxy_smt(direction: str, sweep_time: str, dxy_rows: list[dict], since: str, pair: str = "the pair") -> dict | None:
-    """SMT against DXY for a USD-quote pair (EURUSD, GBPUSD move inverse to DXY).
+    """SMT against DXY for a USD-quote instrument (EURUSD, GBPUSD, XAUUSD move inverse to DXY).
     A short on the pair follows a buy-side sweep (new high). The dollar mirror is a new DXY LOW. If DXY did NOT make a new
     low around the sweep (+-3 min) versus its own low since `since`, the two disagree: SMT divergence, supports the trade.
     If DXY did make the new low too, there is no divergence (neutral, noted). Confluence only - never a gate."""
@@ -407,7 +407,7 @@ MAX_AGE = timedelta(hours=6)  # measured from when the cycle DETECTED the event 
 
 def outbox(st: State, bars: Bars, dry_run: bool, env, charts: bool = True) -> dict:
     """Undelivered events (no log row) in order. A failed/blocked event stops later events of the same setup this cycle,
-    so Hilda never gets FILLED before NEW. Events detected more than MAX_AGE ago (still undelivered) are reported as
+    so Ntloso never gets FILLED before NEW. Events detected more than MAX_AGE ago (still undelivered) are reported as
     expired, not sent. Age runs from `detected_at`, so an event found late (e.g. a CANCELLED stamped at the 17:00 kill-zone
     end but first seen on the next morning's run) is still delivered once."""
     report = {"sent": [], "failed": [], "blocked": [], "dry_run": [], "expired": []}

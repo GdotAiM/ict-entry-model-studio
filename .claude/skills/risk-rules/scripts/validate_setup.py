@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hilda's stop / R:R / labelling rules, applied deterministically. The model never does this maths in its head.
+"""Ntloso's stop / R:R / labelling rules, applied deterministically. The model never does this maths in its head.
 
 Rules:
   1. Stop must sit at least (spread + normal 1m wick) beyond the raid extreme. If no stop is given, that minimum is used.
@@ -124,7 +124,7 @@ def main(argv=None) -> int:
     res["stop_buffer_source"] = ("CLI/setup override" if (a.spread is not None or a.wick is not None or "spread" in s)
                                  else f"config/instruments.json stop_buffer ({sb['status']})")
     if sb["is_default"] and res["stop_buffer_source"].startswith("config"):
-        res["notes"].append("stop buffer is a DEFAULT pending Hilda's broker spreads")
+        res["notes"].append("stop buffer is a DEFAULT pending the Capital.com spreads")
     print(json.dumps(res, indent=2))
     if a.write and a.setup:
         merged = [{**orig, **t} for orig, t in zip(s.get("targets", []), res["targets"])] if s.get("targets") else res["targets"]

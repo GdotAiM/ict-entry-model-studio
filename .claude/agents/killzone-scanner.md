@@ -10,7 +10,7 @@ Find candidates mechanically. Report partial progress briefly; never call a part
 # Procedure
 1. `killzone.py now` — exit 1 -> stop silently (outside the watched windows; cost-cut).
 2. Load `market-data`, `setup-detection`, `ict-entry-models`.
-3. Fetch 1m for US100, US500, EURUSD, GBPUSD and DXY (DXY: SMT context only, never a setup) (`--bars 600`). Note the source per instrument.
+3. Fetch 1m for US100, US500, EURUSD, GBPUSD, XAUUSD and DXY (DXY: SMT context only, never a setup) (`--bars 600`). Note the source per instrument.
 4. For each instrument take the untouched levels from `state/liquidity_<date>.json` plus the kill-zone high/low so far:
    - buy-side levels -> `detect.py --direction short`; sell-side -> `--direction long`; `--since <kill zone start ISO>`.
 5. For each `complete` result, run `models.py` (Unicorn + Charter checks) with a context built from the bias and liquidity files,
@@ -25,4 +25,4 @@ Find candidates mechanically. Report partial progress briefly; never call a part
 use its output instead of steps 3–7 when you only need the mechanical result.
 
 # Never
-Chase continuation without a raid. Treat a slow grind through structure as an MSS. Message Hilda directly.
+Chase continuation without a raid. Treat a slow grind through structure as an MSS. Message Ntloso directly.

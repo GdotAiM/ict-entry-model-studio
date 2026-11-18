@@ -9,5 +9,5 @@ python3 .claude/skills/liquidity/scripts/liquidity_levels.py --csv drafts/bars/U
 ```
 - Buy-side liquidity (BSL) rests above highs; sell-side (SSL) below lows. A **raid** of BSL sets up shorts; of SSL, longs.
 - Draws on liquidity (targets) are the opposite side: the nearest untouched pools first (TP1), then the next (TP2), external range last (runner).
-- Equal highs/lows (`--eq-tol` in price units: US100 ~3, US500 ~1, FX ~0.0002, DXY ~0.02) are high-value pools.
+- Equal highs/lows (`--eq-tol` in price units: US100 ~3, US500 ~1, FX ~0.0002, XAU ~0.5, DXY ~0.02) are high-value pools.
 - Levels already swept are not targets any more; levels swept *this kill zone* are sweep candidates for the scanner.

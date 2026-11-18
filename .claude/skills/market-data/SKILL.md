@@ -10,7 +10,7 @@ description: The only sanctioned way to get prices - TradingView via the Node br
 | EURUSD | CAPITALCOM:EURUSD | EURUSD=X |
 | GBPUSD | CAPITALCOM:GBPUSD | GBPUSD=X |
 | DXY (context only) | TVC:DXY | DX-Y.NYB |
-| XAUUSD (switched off) | OANDA:XAUUSD | GC=F (futures, premium to spot) |
+| XAUUSD | CAPITALCOM:GOLD | GC=F (futures, premium to spot; fallback blocked) |
 
 ```bash
 python3 .claude/skills/market-data/scripts/fetch_bars.py US100 1m --bars 600 --out drafts/bars/US100_1m.csv

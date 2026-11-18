@@ -15,11 +15,6 @@
       "corr_group": "US-indices", "dxy_relation": "none",
       "stop_buffer": {"spread": 0.5, "wick_1m": 2.0, "unit": "index points", "status": "DEFAULT PLACEHOLDER - enter your Capital.com US500 spread and a normal 1m wick", "basis": "2.5 pts total, scaled from US100 by price (~0.27x); not verified"}
     },
-    "XAUUSD": {
-      "enabled": false, "_disabled": "kept for reference, not scanned and not on the dashboard; set enabled: true in instruments.local.json to bring it back",
-      "tv": "OANDA:XAUUSD", "yf": "GC=F", "block_on_fallback": true, "decimals": 2, "pip": 0.1, "point": 0.01, "usd_leg": "quote", "eq_tol": 0.5,
-      "stop_buffer": {"spread": 0.3, "wick_1m": 1.0, "unit": "USD per oz", "status": "DEFAULT - pending broker spread", "basis": "1.3 total, as used in the 11 Nov X2 alert"}
-    },
     "EURUSD": {
       "tv": "CAPITALCOM:EURUSD", "yf": "EURUSD=X", "decimals": 5, "pip": 0.0001, "point": 0.00001, "usd_leg": "quote", "eq_tol": 0.0002,
       "corr_group": "USD", "dxy_relation": "inverse",
@@ -29,6 +24,11 @@
       "tv": "CAPITALCOM:GBPUSD", "yf": "GBPUSD=X", "decimals": 5, "pip": 0.0001, "point": 0.00001, "usd_leg": "quote", "eq_tol": 0.0002,
       "corr_group": "USD", "dxy_relation": "inverse",
       "stop_buffer": {"spread": 0.0001, "wick_1m": 0.00015, "unit": "price (0.0001 = 1 pip)", "status": "DEFAULT PLACEHOLDER - enter your Capital.com GBPUSD spread", "basis": "1.0 pip spread + 1.5 pip wick"}
+    },
+    "XAUUSD": {
+      "tv": "CAPITALCOM:GOLD", "yf": "GC=F", "block_on_fallback": true, "decimals": 2, "pip": 0.1, "point": 0.01, "usd_leg": "quote", "eq_tol": 0.5,
+      "corr_group": "gold", "dxy_relation": "inverse",
+      "stop_buffer": {"spread": 0.3, "wick_1m": 1.0, "unit": "USD per oz", "status": "DEFAULT PLACEHOLDER - enter your Capital.com GOLD spread and a normal 1m wick", "basis": "1.3 total, as used in the 11 Nov X2 alert; Capital.com gold spread is around 0.3, a quiet 1m wick at ~3,770 about 1.0, not verified"}
     },
     "DXY": {
       "tv": "TVC:DXY", "yf": "DX-Y.NYB", "decimals": 3, "pip": 0.01, "point": 0.001, "usd_leg": "index", "confluence_only": true, "eq_tol": 0.02,

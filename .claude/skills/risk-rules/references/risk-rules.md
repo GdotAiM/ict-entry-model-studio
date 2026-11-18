@@ -1,4 +1,4 @@
-# Risk rules (Hilda)
+# Risk rules (Ntloso)
 
 ## Stop
 - At least **spread + a normal 1m wick beyond the raid extreme** (the true high/low of the raid, not the swept level).
@@ -18,7 +18,7 @@
 | Standalone | 0.5% |
 | Correlated, 2–4 open in one group | 0.25% each |
 | Group cap | 4 trades / 1% |
-Groups: US-indices-long / US-indices-short (US100 + US500 same direction), USD-long (EUR short, GBP short), USD-short (EUR long, GBP long); XAU joins the USD groups if switched on. DXY is never traded.
+Groups: US-indices-long / US-indices-short (US100 + US500 same direction), USD-long (EUR short, GBP short), USD-short (EUR long, GBP long), gold-long / gold-short (XAUUSD, its own group). DXY is never traded.
 Size = equity x risk% / (risk pts x value per point). Shown as a formula; the bot never sends orders.
 A new trade after a loss in the same kill zone is allowed; the alert says the prior trade lost.
 
