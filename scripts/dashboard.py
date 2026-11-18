@@ -340,7 +340,7 @@ def alert_feed(ctx: dict, n: int = 9) -> str:
         what = {"NEW": f'NEW {r["instrument"]} {r["direction"]} · {r.get("model", "").split(" (")[0]}',
                 "LOCKED": f'RISK LOCKED · {r.get("mss", "")}'}.get(ev, f'{ev} {r["instrument"]}{rv}')
         rows.append(f'<tr><td class="mono" style="width:120px;white-space:nowrap">{E(r["date"][5:])} {E(r.get("alert_time_sast", ""))}</td>'
-                    f'<td class="mono" style="width:60px"><b>{E(r["setup_id"][:12])}</b></td><td>{pill(ev, ev)}</td><td>{E(what)}</td></tr>')
+                    f'<td class="mono" style="width:60px;white-space:nowrap"><b>{"RISK" if ev == "LOCKED" else E(r["setup_id"][:8])}</b></td><td>{pill(ev, ev)}</td><td>{E(what)}</td></tr>')
     if not rows:
         rows = ['<tr><td class="mut" style="padding:18px">No alert delivered yet.</td></tr>']
     return f'<div class="card" style="margin-top:14px"><h2>Alert feed<span class="r">each row = delivered once (state/alerts_log.csv)</span></h2><table>{"".join(rows)}</table></div>'
@@ -535,6 +535,10 @@ def build_setup(ctx: dict, s: dict) -> str:
     elif st in OPEN:
         tl.append(f'<div style="flex:1;min-width:140px;opacity:.7"><div>{pill(st, "Open")}</div><div class="mono" style="margin-top:6px"><b>now</b></div>'
                   '<div class="mut" style="font-size:11.5px">tracking until TP2, stop or breakeven</div></div>')
+    if st == "locked":
+        t = datetime.fromisoformat(s["alert_time"]).astimezone(SAST)
+        tl.append(f'<div style="flex:1;min-width:140px"><div>{pill("locked")}</div><div class="mono" style="margin-top:6px"><b>{t:%H:%M}</b> <span class="mut">{t.astimezone(NY):%H:%M} NY</span></div>'
+                  f'<div class="mut" style="font-size:11.5px">found while {E((s.get("lock") or {}).get("reason", "a risk cap was hit"))} · recorded, not alerted</div></div>')
     if not tl:
         tl = ['<div class="mut">No events yet.</div>']
     body = (head + '<div style="display:grid;grid-template-columns:1fr 380px;gap:14px;margin-top:14px">'
