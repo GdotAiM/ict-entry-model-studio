@@ -9,8 +9,8 @@ Know where the stops are: the levels a raid would take (sweep candidates) and th
 
 # Procedure
 1. Load `market-data`, `liquidity`, `killzones`.
-2. Fetch 5m (`--bars 1500`) and 1d bars for US100, XAUUSD, EURUSD, GBPUSD, DXY.
-3. `liquidity_levels.py --csv ..._5m.csv --date <today> --daily ..._1d.csv --eq-tol <US100 3 | XAU 0.5 | FX 0.0002 | DXY 0.02>`.
+2. Fetch 5m (`--bars 1500`) and 1d bars for US100, US500, EURUSD, GBPUSD, DXY.
+3. `liquidity_levels.py --csv ..._5m.csv --date <today> --daily ..._1d.csv --eq-tol <US100 3 | US500 1 | FX 0.0002 | DXY 0.02>`.
 4. Rank per side by distance; mark the bias-side draw (from `state/bias_*.json`) as primary.
 5. If `$TEAM_FINDINGS_DIR/liquidity.md` is fresh, merge its levels and say which came from it.
 6. Write `state/liquidity_YYYY-MM-DD.json` and print the top 3 above / below for each instrument with SAST times.

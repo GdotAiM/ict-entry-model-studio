@@ -13,7 +13,7 @@ Targets: TP1 <p> = <r>R [PARTIAL only]; TP2 <p> = <r>R; runner toward <p>
 Size: equity x <risk%> / <pts> pts (<0.5% standalone | 0.25% correlated>)
 Confluence: <DXY / SMT / bias / liquidity notes>
 Caveats: <stale files, weak displacement, prior loss>; skip if TP1 trades before the fill; drop if <extreme> breaks first; cancel if unfilled by <KZ end> SAST
-Data: TradingView OANDA:<SYMBOL> (tvDatafeed). OANDA prices are bid; ...   |   ⚠️ yfinance FALLBACK used (...)
+Data: TradingView CAPITALCOM:<SYMBOL> (TradingView-API). Chart prices may be bid or mid; ...   |   ⚠️ yfinance FALLBACK used (...)
 Analysis only, not financial advice. Nothing here places or manages orders.
 ```
 

@@ -1,6 +1,6 @@
 # ict-entry-model-studio
 
-A Claude Code project that watches **US100, XAUUSD, EURUSD and GBPUSD** (with **DXY** as confluence) for **ICT entry setups**
+A Claude Code project that watches **US100, US500, EURUSD and GBPUSD** (with **DXY** as context only) for **ICT entry setups**
 during the kill zones, and writes an alert for every valid setup and every status change: fill, TP1, TP2, stop, breakeven,
 void, invalid, cancelled. Each alert names the model and its Charter stage and comes with a marked-up chart.
 
@@ -78,7 +78,7 @@ Caps are in `config/instruments.json -> risk` (`daily_loss_cap_pct`, `max_drawdo
 ## Layout
 ```
 CLAUDE.md                          hard rules (analysis only, never invent prices, stop/R:R/risk/labels, dedupe)
-config/instruments.json            symbols, yfinance proxies, stop_buffer (spread + 1m wick, DEFAULTS), block_on_fallback, risk, watched kill zones
+config/instruments.json            symbols, yfinance proxies, stop_buffer (spread + 1m wick, PLACEHOLDERS), block_on_fallback, enabled, corr_group, risk, watched kill zones
 config/instruments.local.json      (git-ignored) your broker's spreads, merged over the defaults
 lib/emconfig.py                    config loader shared by the scripts
 .env.example                       notifier / runner settings template (copy to .env, git-ignored)
@@ -114,6 +114,27 @@ state/alerts_log.csv, SCHEMA.md    state (setups/*.json are git-ignored)
 examples/                          EXAMPLE DATA (FABRICATED) used by tests and CI
 tests/                             pytest (no network)
 ```
+
+## Watchlist (v3)
+
+| Instrument | TradingView symbol | Role | Point / pip | Stop buffer (PLACEHOLDER) | yfinance fallback | Group (1% cap) |
+|---|---|---|---|---|---|---|
+| US100 | `CAPITALCOM:US100` | setups + alerts (IDs N..) | 1.0 index pt | 1.5 spread + 7.5 wick = 9.0 pts | NQ=F, **blocked** (futures basis) | US-indices-long / -short |
+| US500 | `CAPITALCOM:US500` | setups + alerts (IDs S..) | 1.0 index pt | 0.5 spread + 2.0 wick = 2.5 pts | ES=F, **blocked** | US-indices-long / -short |
+| EURUSD | `CAPITALCOM:EURUSD` | setups + alerts (IDs E..) | pip 0.0001 | 0.8 + 1.2 pips | EURUSD=X, disclosed | USD-short (long) / USD-long (short) |
+| GBPUSD | `CAPITALCOM:GBPUSD` | setups + alerts (IDs G..) | pip 0.0001 | 1.0 + 1.5 pips | GBPUSD=X, disclosed | USD-short / USD-long |
+| DXY | `TVC:DXY` (ICE index) | context only: dashboard bias, inverse check + SMT note for EURUSD/GBPUSD | 0.01 | – | DX-Y.NYB | none (never traded) |
+| XAUUSD | `OANDA:XAUUSD` | **switched off** (`"enabled": false`), kept in config | 0.1 | 0.3 + 1.0 | GC=F, blocked | USD group if switched on |
+
+- Symbols were checked with a real 5-bar 1m and daily fetch through the Node bridge on 18 Nov 2026: all of the above returned data.
+  Capital.com daily bars open at the 17:00 New York roll (00:00 SAST in November); TVC:DXY daily bars open 00:00 UTC (02:00 SAST),
+  which is allowed per instrument with `daily_open_sast_hours`. CAPITALCOM:DXY also works (a CFD); TVC:DXY is used because it is the index.
+- Stop buffers are **placeholders**, not your spreads. Put your Capital.com spread and a normal 1m wick in `config/instruments.local.json`.
+- Kill zones are unchanged: London Open and NY AM only, defined in New York time and converted to SAST per date (DST-correct).
+- Correlation: US100 and US500 in the same direction share one 1% group. EURUSD and GBPUSD in the same USD direction share another; that
+  already is the "DXY-inverse" exposure (both long = short the dollar). Indices are not added to the USD group: the index/dollar
+  correlation changes sign by regime and is too loose for a hard cap; the 2% daily and 5% drawdown caps cover a bad day across both.
+- To bring XAUUSD back: `{"instruments": {"XAUUSD": {"enabled": true}}}` in `config/instruments.local.json`.
 
 ## Setup
 1. Install [Claude Code](https://docs.claude.com/en/docs/claude-code) and log in.
@@ -207,8 +228,8 @@ python3 scripts/notify.py --alert alerts/2026-11-12_N1_NEW.md --chart charts/us1
 | Agent / command | Prompt |
 |---|---|
 | ict-bias-reader | "Use ict-bias-reader for today." |
-| liquidity-mapper | "Use liquidity-mapper for US100 and XAUUSD, equal-high tolerance 3 points on US100." |
-| killzone-scanner | "Run killzone-scanner now for all four instruments." |
+| liquidity-mapper | "Use liquidity-mapper for US100 and US500, equal-high tolerance 3 points on US100, 1 point on US500." |
+| killzone-scanner | "Run killzone-scanner now for US100, US500, EURUSD and GBPUSD." |
 | setup-validator | "Use setup-validator on drafts/candidate_US100_1051.json. Bias is bull." |
 | setup-lifecycle-tracker | "Use setup-lifecycle-tracker on all open setups." |
 | chart-annotator | "Use chart-annotator for N6 TP1." |
@@ -239,7 +260,7 @@ A full offline walkthrough on fabricated data is in [examples/README.md](example
 - **Labels:** a setup against the daily bias is labelled COUNTER-TREND.
 - **Closed bars only:** a bar is used only once it has closed (a 09:31 bar is available from 09:32:00). The forming bar is never scanned or used for fills and stops.
 - **Lifecycle:** a setup is void if TP1 trades before the fill, invalid if the raid extreme breaks before the fill, and cancelled at the end of the kill zone if unfilled. Ambiguous bars count as a stop first. A gap through the stop fills at the bar's open.
-- **Data:** TradingView first. yfinance is a fallback only and is always disclosed. For US100 and XAUUSD the fallback is *blocked* (the proxies are futures, NQ=F and GC=F, whose basis to the OANDA CFD can exceed the stop buffer), so those instruments report NO DATA instead; set `"block_on_fallback": false` in `config/instruments.local.json` to allow a disclosed fallback. Prices are never invented.
+- **Data:** TradingView first. yfinance is a fallback only and is always disclosed. For US100 and US500 the fallback is *blocked* (the proxies are futures, NQ=F and ES=F, whose basis to the Capital.com CFD can exceed the stop buffer), so those instruments report NO DATA instead; set `"block_on_fallback": false` in `config/instruments.local.json` to allow a disclosed fallback. Prices are never invented.
 
 ## License
 MIT. See [LICENSE](LICENSE). This project is not affiliated with ICT or TradingView.

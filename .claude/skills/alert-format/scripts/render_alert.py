@@ -29,8 +29,9 @@ def label_text(s: dict) -> str:
 def data_line(s: dict) -> str:
     src = s.get("data_source") or "UNKNOWN SOURCE - do not send"
     if s.get("fallback"):
-        return f"Data: ⚠️ yfinance FALLBACK used ({src}). Proxy prices may differ from OANDA - check your chart."
-    tail = " OANDA prices are bid; check your broker's ask against the stop." if "OANDA" in src else ""
+        return f"Data: ⚠️ yfinance FALLBACK used ({src}). Proxy prices may differ from the CFD you trade - check your chart."
+    tail = (" Chart prices may be bid or mid; check your broker's ask against the stop."
+            if any(f in src for f in ("OANDA", "CAPITALCOM")) else "")
     return f"Data: {src}.{tail}"
 
 
