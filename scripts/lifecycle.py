@@ -24,7 +24,8 @@ from zoneinfo import ZoneInfo
 
 SAST = ZoneInfo("Africa/Johannesburg")
 
-TERMINAL = {"closed_tp2", "closed_tp1", "closed_stop", "closed_be", "void", "invalid", "cancelled"}
+# "locked": found while the daily-loss or drawdown cap was hit (lib/riskstate.py); never alerted, never tracked.
+TERMINAL = {"closed_tp2", "closed_tp1", "closed_stop", "closed_be", "void", "invalid", "cancelled", "locked"}
 
 
 def load_csv(path: str) -> list[dict]:

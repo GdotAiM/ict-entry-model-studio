@@ -16,7 +16,7 @@ Rules:
 Exit codes: 0 VALID, 1 NO TRADE, 2 usage error.
 """
 from __future__ import annotations
-import argparse, json, os, sys
+import argparse, json, math, os, sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
 sys.path.insert(0, os.path.join(ROOT, "lib"))
@@ -30,6 +30,19 @@ def bias_label(direction: str, bias: str | None) -> str:
     if b in ("bear", "bearish", "short"):
         return "with-bias" if direction == "short" else "COUNTER-TREND"
     return "no clear bias"
+
+
+RR_TOL = 1e-9  # float noise only; 1.995R is NOT 2R
+
+
+def _show_r(exact: float | None, min_rr: float) -> float | None:
+    """R for display, 2 decimals. A ratio under the minimum is never displayed as the minimum (1.995 -> 1.99, not 2.0)."""
+    if exact is None:
+        return None
+    r = round(exact, 2)
+    if exact < min_rr - RR_TOL <= r - RR_TOL:
+        r = math.floor(exact * 100) / 100
+    return r
 
 
 def validate(direction: str, entry: float, raid_extreme: float, targets: list[float], spread: float, wick: float,
@@ -55,16 +68,19 @@ def validate(direction: str, entry: float, raid_extreme: float, targets: list[fl
         reward = (entry - tp) * sign
         if reward <= 0:
             errors.append(f"TP{k} {tp} is not on the profit side of entry {entry}")
-            tps.append({"name": f"TP{k}", "price": tp, "r": None}); continue
-        r = round(reward / risk, 2) if risk == risk else None
-        tps.append({"name": f"TP{k}", "price": tp, "r": r})
+            tps.append({"name": f"TP{k}", "price": tp, "r": None, "_exact": None}); continue
+        exact = reward / risk if risk == risk else None
+        tps.append({"name": f"TP{k}", "price": tp, "r": _show_r(exact, min_rr), "_exact": exact})
+    # Compare the UNROUNDED ratio: 1.995R used to round to 2.0 and pass the 1:2 minimum.
+    best_exact = max([t["_exact"] for t in tps if t["_exact"] is not None], default=0)
     best = max([t["r"] for t in tps if t["r"] is not None], default=0)
     if not targets:
         errors.append("no targets given")
-    elif best < min_rr:
+    elif best_exact < min_rr - RR_TOL:
         errors.append(f"best target is {best}R, under the 1:{min_rr:g} minimum with a rule-compliant stop - NO TRADE")
     for t in tps:
-        if t["r"] is not None and t["r"] < min_rr and best >= min_rr:
+        ex = t.pop("_exact")
+        if ex is not None and ex < min_rr - RR_TOL and best_exact >= min_rr - RR_TOL:
             t["partial"] = True
             notes.append(f"{t['name']} {t['price']} is {t['r']}R (<{min_rr:g}R): PARTIAL only")
     label = bias_label(direction, bias)

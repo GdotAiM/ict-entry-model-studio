@@ -31,6 +31,11 @@
     "standalone_pct": 0.5,
     "correlated_pct_each": 0.25,
     "correlated_max_trades": 4,
-    "correlated_group_max_pct": 1.0
+    "correlated_group_max_pct": 1.0,
+    "daily_loss_cap_pct": 2.0,
+    "max_drawdown_pct": 5.0,
+    "partial_share": 0.5,
+    "dd_reset_at": null,
+    "_caps_comment": "Your caps: 0.5% per trade (standalone_pct), 2% daily loss (daily_loss_cap_pct, trading day rolls at 17:00 New York), 5% max drawdown (max_drawdown_pct). Hitting the daily or drawdown cap LOCKS new setups (lib/riskstate.py). After a drawdown lock, review, then set dd_reset_at (ISO time) in config/instruments.local.json to restart peak tracking."
   }
 }

@@ -14,7 +14,7 @@ DISCLAIMER = "Analysis only, not financial advice. Nothing here places or manage
 STAGE = {"NEW": "Trade Planning", "FILLED": "Trade Execution", "UPDATE": "Trade Management", "TP1": "Trade Management",
          "TP2": "Trade Management (closed)", "TP3": "Trade Management (closed)", "STOP": "Trade Management (closed)",
          "BE": "Trade Management (closed)", "VOID": "Trade Planning (cancelled)", "INVALID": "Trade Planning (cancelled)",
-         "CANCELLED": "Trade Planning (cancelled)"}
+         "CANCELLED": "Trade Planning (cancelled)", "LOCKED": "Trade Planning (locked: risk cap)"}
 
 
 def _fmt(x, d):
@@ -99,9 +99,22 @@ def render(s: dict, event: str, time: str | None = None, price: float | None = N
     return "\n".join(L)
 
 
+def render_lock(rs: dict) -> str:
+    """The one alert sent when the daily-loss or drawdown cap is hit (key: lock id + LOCKED in the alert log)."""
+    lk, c = rs["lock"], rs["caps"]
+    L = [f"🔒 RISK LOCKED: {lk['reason']}.",
+         f"New setups are blocked until {lk['until']}. They are still recorded as LOCKED on the dashboard, never alerted.",
+         f"Today {rs['daily_pct']:+.2f}% (cap -{c['daily_loss_cap_pct']:g}%) | drawdown {rs['drawdown_pct']:.2f}% (max {c['max_drawdown_pct']:g}%)"
+         f" | open risk {rs['open_risk_pct']:.2f}% on {len(rs['open_setups'])} setup(s), still tracked. Any resting orders are yours to review.",
+         "Charter stage: Trade Planning (locked: risk cap)",
+         "Data: risk state from the alerted setups at their recorded risk % (model account, no broker link).",
+         DISCLAIMER]
+    return "\n".join(L)
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--setup", required=True); p.add_argument("--event", required=True, choices=sorted(STAGE))
+    p.add_argument("--setup", required=True); p.add_argument("--event", required=True, choices=sorted(set(STAGE) - {"LOCKED"}))
     p.add_argument("--time"); p.add_argument("--price", type=float); p.add_argument("--note", default="")
     p.add_argument("--out")
     a = p.parse_args(argv)

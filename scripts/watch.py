@@ -8,6 +8,9 @@ Cycle:
   3. Outbox: every setup event without a row in state/alerts_log.csv is rendered, gated (check_alert.py), charted and
      delivered (notify.py). The log row is written only after a successful delivery.
   4. findings/setups.md is refreshed. Nothing is sent when nothing changed.
+Risk caps (lib/riskstate.py): after step 1 the account state is rebuilt from the setups. At the 2% daily loss or 5% drawdown
+cap the cycle is LOCKED: setups found are saved as "locked" (never alerted) and ONE "RISK LOCKED" alert goes out per lock.
+Otherwise a setup that would let the worst case (today's result - all open risk - its risk) pass a cap is skipped.
 
     python3 scripts/watch.py                       # live: TradingView (yfinance fallback, disclosed)
     python3 scripts/watch.py --dry-run             # everything except sending / logging
@@ -25,7 +28,7 @@ for p in ("lib", "scripts", *[os.path.join(".claude", "skills", s, "scripts") fo
           ("killzones", "market-data", "ict-bias", "liquidity", "setup-detection", "risk-rules", "alert-format", "chart-markup")]):
     sys.path.insert(0, os.path.join(ROOT, p))
 
-import emconfig, killzone, fetch_bars, mtf_bias, liquidity_levels, detect, models  # noqa: E402
+import emconfig, riskstate, killzone, fetch_bars, mtf_bias, liquidity_levels, detect, models  # noqa: E402
 import validate_setup, position_size, render_alert, check_alert, lifecycle, alert_log, notify, write_setups_md  # noqa: E402
 
 SAST, NY = ZoneInfo("Africa/Johannesburg"), ZoneInfo("America/New_York")
@@ -212,7 +215,11 @@ def pick_targets(direction: str, entry: float, stop: float, pools: list[dict], m
 
 
 # ---------------------------------------------------------------- scan
-def scan_instrument(inst: str, bars: Bars, st: State, now: datetime, kz: dict, cfg: dict, existing: list[dict]) -> list[dict]:
+def scan_instrument(inst: str, bars: Bars, st: State, now: datetime, kz: dict, cfg: dict, existing: list[dict],
+                    risk: dict | None = None) -> list[dict]:
+    """New setups for one instrument. `risk` = riskstate.risk_state(...): when it is LOCKED, setups are still built
+    (status "locked", no NEW event, never alerted); otherwise a setup that would break the daily or drawdown headroom
+    is skipped and listed in risk["skipped"]."""
     rows, meta = bars.get(inst, "1m")
     ci = cfg["instruments"][inst]
     try:
@@ -265,10 +272,18 @@ def scan_instrument(inst: str, bars: Bars, st: State, now: datetime, kz: dict, c
                                       None, bias.get("bias"), cfg["risk"]["min_rr"], ci["decimals"])
         if val["verdict"] != "VALID":
             continue
-        opens = [(s["instrument"], s["direction"]) for s in existing if s.get("status") in OPEN]
+        # real recorded risk of every open trade, including setups found earlier in THIS scan
+        opens = [(s["instrument"], s["direction"], s.get("risk_pct")) for s in list(existing) + found if s.get("status") in OPEN]
         rk = position_size.risk_pct_for(inst, direction, opens)
         if not rk["allowed"]:
             continue
+        locked = bool(risk and risk.get("locked"))
+        if risk is not None and not locked:
+            extra = sum(f["risk_pct"] for f in found)
+            hr = riskstate.headroom({**risk, "open_risk_pct": risk["open_risk_pct"] + extra}, rk["risk_pct"])
+            if not hr["allowed"]:
+                risk.setdefault("skipped", []).append({"instrument": inst, "direction": direction, "key": key, "reasons": hr["reasons"]})
+                continue
         leg_eq = (c["raid_extreme"] + m["leg_end"]) / 2
         fmid = (fvg["low"] + fvg["high"]) / 2 if fvg else None
         wk = next((t for t in bias.get("timeframes", []) if t["tf"] == "weekly"), None)
@@ -322,6 +337,9 @@ def scan_instrument(inst: str, bars: Bars, st: State, now: datetime, kz: dict, c
              "validation": {"verdict": val["verdict"], "errors": val["errors"], "notes": val["notes"]},
              "status": "pending", "candidate_key": key, "alert_time": now.isoformat(), "last_checked": m["break_time"],
              "events": [{"event": "NEW", "time": now.isoformat(), "price": None, "r": None, "note": ""}]}
+        if locked:
+            s.update(status="locked", charter_stage=models.charter_stage("locked"), events=[], lock=risk["lock"])
+            s["caveats"] = [f"LOCKED: {risk['lock']['reason']} - recorded, not alerted"] + s["caveats"]
         found.append(s)
     return found
 
@@ -384,13 +402,36 @@ def outbox(st: State, bars: Bars, dry_run: bool, env, charts: bool = True) -> di
     return report
 
 
+def lock_outbox(st: State, rs: dict, dry_run: bool, env, report: dict) -> None:
+    """One LOCKED alert per lock (key: lock id + LOCKED in the alert log), sent after the events that caused it."""
+    if not rs.get("locked"):
+        return
+    lk = rs["lock"]
+    txt = render_alert.render_lock(rs)
+    errs = check_alert.check(txt, "LOCKED")
+    if errs:
+        report["blocked"].append({"id": lk["id"], "event": "LOCKED", "errors": errs}); return
+    row = {"date": rs["now"][:10], "session": "", "instrument": "ALL", "direction": "", "label": "", "model": "",
+           "alert_time_sast": rs["now"][11:16], "swept": "", "mss": lk["reason"], "zone": "", "stop": "", "target": "", "r": ""}
+    res = notify.deliver_and_log(lk["id"], "LOCKED", txt, None, row, st.log, dry_run, env, subject=f"[ICT alert] RISK LOCKED ({lk['kind']})")
+    key = {"id": lk["id"], "event": "LOCKED", "chart": None}
+    if res.get("skipped"):
+        return
+    if dry_run:
+        report["dry_run"].append({**key, "text": txt})
+    elif res.get("sent"):
+        report["sent"].append({**key, "channels": res["sent"]})
+    else:
+        report["failed"].append({**key, "errors": res.get("failed")})
+
+
 # ---------------------------------------------------------------- cycle
 def run_cycle(now: datetime, root: str = ROOT, bars_dir: str | None = None, dry_run: bool = False, env=None,
               instruments: list[str] | None = None, charts: bool = True) -> dict:
     env = os.environ if env is None else env
     cfg = emconfig.load_config()
     st, bars = State(root), Bars(bars_dir, now, cfg)
-    report = {"now_sast": now.strftime("%Y-%m-%d %H:%M"), "events": [], "new": [], "errors": []}
+    report = {"now_sast": now.strftime("%Y-%m-%d %H:%M"), "events": [], "new": [], "locked": [], "errors": []}
     # 1. lifecycle
     for s in st.setups():
         if s.get("status") not in OPEN:
@@ -409,16 +450,20 @@ def run_cycle(now: datetime, root: str = ROOT, bars_dir: str | None = None, dry_
             s.setdefault("events", []).extend(evs)
             report["events"] += [f"{s['id']} {e['event']}" for e in evs]
         st.save(s)
+    # risk state after the lifecycle replay (a stop just booked can lock the account)
+    rs = riskstate.risk_state(st.setups(), now, cfg)
     # 2. scan
     kz = killzone.in_watched_killzone(now, tuple(cfg.get("watch_killzones", killzone.DEFAULT_WATCHED)))
     report["killzone"] = kz["name"] if kz else None
     if kz:
         for inst in instruments or [i for i in cfg["instruments"] if not cfg["instruments"][i].get("confluence_only")]:
             try:
-                new = scan_instrument(inst, bars, st, now, kz, cfg, st.setups())
+                new = scan_instrument(inst, bars, st, now, kz, cfg, st.setups(), rs)
             except LookupError as e:
                 report["errors"].append(str(e)); continue
             for s in new:
+                if s["status"] == "locked":
+                    st.save(s); report["locked"].append(s["id"]); continue
                 rows = bars.get(inst, "1m")[0]
                 status, evs = lifecycle.evaluate(s, rows, s.get("killzone_end"), now)
                 for e in evs:
@@ -432,6 +477,9 @@ def run_cycle(now: datetime, root: str = ROOT, bars_dir: str | None = None, dry_
                 report["new"].append(s["id"])
     # 3. outbox
     report["outbox"] = outbox(st, bars, dry_run, env, charts)
+    lock_outbox(st, rs, dry_run, env, report["outbox"])
+    report["risk"] = {k: rs[k] for k in ("trading_day", "daily_pct", "drawdown_pct", "open_risk_pct", "locked", "lock")}
+    report["risk"]["skipped"] = rs.get("skipped", [])
     # 4. findings
     srcs = sorted({m.get("source", "") for (_, iv), (_, m) in bars.cache.items() if iv == "1m"})
     text = write_setups_md.build(sorted(st.setups(), key=lambda s: s.get("alert_time", "")), [], now, "; ".join(srcs))

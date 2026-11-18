@@ -56,7 +56,11 @@ def test_standalone_and_correlated_risk():
     assert ps.risk_pct_for("XAUUSD", "long", [("EURUSD", "short")])["risk_pct"] == 0.5
     full = [("EURUSD", "long"), ("GBPUSD", "long"), ("XAUUSD", "long"), ("EURUSD", "long")]
     assert ps.risk_pct_for("GBPUSD", "long", full)["allowed"] is False
-    assert ps.risk_pct_for("GBPUSD", "long", full[:3])["risk_pct"] == 0.25
+    # Changed with the group-cap fix: three bare open trades are 0.5 + 0.25 + 0.25 = 1.0% already, so the group is full.
+    # (This line used to expect 0.25%, i.e. a 1.25% group reported as inside the 1% cap - the bug.)
+    assert ps.risk_pct_for("GBPUSD", "long", full[:3])["allowed"] is False
+    three_quarter = [(i, d, 0.25) for i, d in full[:3]]
+    assert ps.risk_pct_for("GBPUSD", "long", three_quarter)["risk_pct"] == 0.25
 
 
 def test_size_formula():

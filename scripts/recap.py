@@ -22,6 +22,8 @@ ZERO = {"VOID", "INVALID", "CANCELLED"}
 def setup_results(rows: list[dict], partial_share: float = 0.5) -> list[dict]:
     by = defaultdict(list)
     for r in rows:
+        if r.get("event") == "LOCKED":
+            continue  # account-level risk lock (setup_id RISK-...), not a trade
         by[(r["date"], r["setup_id"])].append(r)
     out = []
     for (d, sid), evs in by.items():

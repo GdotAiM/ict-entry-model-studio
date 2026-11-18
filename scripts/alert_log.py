@@ -24,7 +24,7 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DEFAULT_LOG = os.path.join(ROOT, "state", "alerts_log.csv")
 FIELDS = ["date", "session", "instrument", "setup_id", "direction", "label", "model", "event", "alert_time_sast",
           "swept", "mss", "zone", "stop", "target", "r", "chart"]
-EVENTS = {"NEW", "FILLED", "TP1", "TP2", "TP3", "STOP", "BE", "VOID", "INVALID", "CANCELLED", "UPDATE"}
+EVENTS = {"NEW", "FILLED", "TP1", "TP2", "TP3", "STOP", "BE", "VOID", "INVALID", "CANCELLED", "UPDATE", "LOCKED"}
 
 
 def n_targets(row: dict) -> int:

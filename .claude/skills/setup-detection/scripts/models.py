@@ -226,7 +226,7 @@ def name_models(unicorn_hit: dict | None, charters: list[dict]) -> dict:
 
 
 STAGES = {"watching": "Opportunity Discovery", "pending": "Trade Planning", "filled": "Trade Execution",
-          "tp1": "Trade Management", "prep": "Preparation"}
+          "tp1": "Trade Management", "prep": "Preparation", "locked": "Trade Planning (locked: risk cap)"}
 
 
 def charter_stage(status: str) -> str:
